@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Semigrupos numéricos</title>
+    <link rel="stylesheet" type="text/css" href="index.css" />
+</head>
+
+<body>
+    <header>
+        <img id="logo" src="imagenes/logo.png" alt="logo de la pagina del tfg" width="50" height="50">
+        <h1 id="SN_principal">SEMIGRUPOS NUMÉRICOS</h1>
+        <ul>
+            <li><a href="index.html">Inicio</a></li>
+            <li><a href="visionmatematica.html">Visión matemática</a></li>
+            <li><a href="visioninformatica.html">Visión informática</a></li>
+            <li><a href="utilidades.html">Utilidades</a></li>
+            <li><a href="informacion.html">Información</a></li>
+            <li><a href="experiencias.html">Experiencias</a></li>
+        </ul>
+    </header>
+
+    <main>
+        <section>
+            <img class="imagenRotatoria" id="espiral" src="imagenes/espiral.png" alt="imagen de un semigrupo numerico"
+                width="200" height="200">
+        </section>
+
+        <section id="SemiNum">
+            <h2 id="SN">SEMIGRUPOS NUMÉRICOS</h2>
+            <br>
+            <p>En esta página se mostrará contenido relacionado con los semigrupos numéricos y su importancia
+                matemática e informática.
+            </p>
+            <p>¡Sumérgete en el fascinante mundo donde las matemáticas puras y la informática avanzada se
+                fusionan para desentrañar los misterios de los semigrupos numéricos!</p>
+            <p>Un semigrupo numérico es un subconjunto <strong>S</strong> de los números enteros no negativos
+                cumpliendo:</p>
+            <p id="text"><span class="punto"></span><strong>Cierre bajo la suma</strong></p>
+            <p id="text"><span class="punto"></span><strong>Finitamente generado</strong></p>
+            <p id="text"><span class="punto"></span><strong>Contiene el 0</strong></p>
+            <div id="contenedorFA"></div>
+        </section>
+    </main>
+
+    <footer id="f1">
+        <a id="e1" href="documentocontacto.html">Documento de contacto</a>--------------------------------------
+        <a id="e1" href="documentacion.pdf">documentacion.pdf</a>
+    </footer>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            function crearFuegosArtificiales() {
+                const contenedor = document.getElementById("contenedorFA");
+                const esquinas = [
+                    { x: 0, y: 0 },
+                    { x: contenedor.offsetWidth, y: 0 },
+                    { x: 0, y: contenedor.offsetHeight },
+                    { x: contenedor.offsetWidth, y: contenedor.offsetHeight }
+                ];
+
+                esquinas.forEach(esquina => {
+                    for (let i = 0; i < 10; i++) {
+                        const particula = document.createElement("div");
+                        particula.classList.add("particula");
+
+                        particula.style.left = `${esquina.x}px`;
+                        particula.style.top = `${esquina.y}px`;
+
+                        const angulo = Math.random() * 2 * Math.PI;
+                        const distancia = Math.random() * 50 + 30;
+                        const movimientoX = Math.cos(angulo) * distancia;
+                        const movimientoY = Math.sin(angulo) * distancia;
+
+                        particula.style.setProperty("--x", `${movimientoX}px`);
+                        particula.style.setProperty("--y", `${movimientoY}px`);
+
+                        contenedor.appendChild(particula);
+
+                        setTimeout(() => {
+                            particula.remove();
+                        }, 1000);
+                    }
+                });
+            }
+
+            setInterval(crearFuegosArtificiales, 2000);
+        });
+    </script>
+
+</body>
+
+</html>

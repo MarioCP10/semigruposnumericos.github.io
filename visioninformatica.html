@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visión informática</title>
+    <link rel="stylesheet" type="text/css" href="visioninformatica.css" />
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script type="text/javascript" id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+        </script>
+</head>
+
+<body>
+    <header>
+        <img id="logo" src="imagenes/logo.png" alt="logo de la pagina del tfg" width="50" height="50">
+        <h1 id="SN_principal">SEMIGRUPOS NUMÉRICOS</h1>
+        <ul>
+            <li><a href="index.html">Inicio</a></li>
+            <li><a href="visionmatematica.html">Visión matemática</a></li>
+            <li><a href="visioninformatica.html">Visión informática</a></li>
+            <li><a href="utilidades.html">Utilidades</a></li>
+            <li><a href="informacion.html">Información</a></li>
+            <li><a href="experiencias.html">Experiencias</a></li>
+        </ul>
+    </header>
+
+    <main>
+        <section>
+            <nav class="sidebar">
+                <ul>
+                    <li><a href="automatas.html">Automatas</a></li>
+                    <li><a href="seguridad.html">Seguridad</a></li>
+                    <li><a href="mochila.html">Mochila</a></li>
+                    <li><a href="generoFijo.html">Género Fijo</a></li>
+                    <li><a href="numeroFrobFijo.html">Número Frobenius Fijo</a></li>
+                    <li><a href="generoMulti.html">Género y Multiplicidad Fijos</a></li>
+                </ul>
+            </nav>
+        </section>
+
+        <section id="sH">
+            <h2 id="SH">VISIÓN INFORMÁTICA</h2>
+            <p>Se han encontrado varias formas de aplicar los semigrupos numéricos al ámbito de la informática, sobre
+                todo en aquellas
+                áreas donde la teoría de números, la optimización y la combinatoria se intersectan con problemas
+                computacionales.
+                Algunos conceptos bastantes conocidos en donde se usan o se inspiran estas soluciones a la informática
+                son:
+            </p>
+            <p id="text"><span class="punto"></span><strong>Algoritmos de complejidad computacional.
+                </strong>
+            </p>
+            <p id="text"><span class="triangulo"></span><strong>Problema del cambio:
+                </strong> uno de los problemas clásicos que se asocian a los
+                semigrupos numéricos es el
+                problema de Frobenius, el cual lo que se quiere es determinar el mayor entero que no se puede expresar
+                como combinación
+                lineal (coeficientes no negativos) de un conjunto dado de enteros positivos. Uno de ellos es el problema
+                de la moneda,
+                el cual presenta relevancia teórica e inspira algoritmos de optimización y análisis de la complejidad
+                computacional de
+                problemas relacionados con la factorización y la representación de números enteros.
+            </p>
+            <p id="text"><span class="triangulo"></span><strong>Optimización y algoritmos voraces:
+                </strong> las técnicas empleadas para estudiar semigrupos numéricos se pueden aplicar al diseño de
+                algoritmos voraces y algoritmos
+                dinámicos para resolver problemas de optimización en áreas como la logística, la asignación de recursos
+                y el
+                empaquetamiento.
+            </p>
+            <p id="text"><span class="punto"></span><strong>Teoría de códigos y criptografía.
+                </strong>
+            </p>
+            <p id="text"><span class="triangulo"></span><strong>Construcción de códigos:
+                </strong> algunos códigos correctores de errores y esquemas de codificación usan estructuras algebraicas
+                que se relacionan con
+                semigrupos. En este caso es importante aprovechar la estructura de los huecos en los semigrupos
+                numéricos para definir
+                códigos con ciertas propiedades, como distancias mínimas fijas. Esto es relevante si queremos detectar y
+                corregir
+                errores en la transmisión de datos.
+            </p>
+            <p id="text"><span class="triangulo"></span><strong>Criptografía:
+                </strong> en este ámbito, aunque la aplicación directa de semigrupos numéricos es menos común que otras
+                estructuras algebraicas,
+                como pueden ser los grupos o anillos, los principios subyacentes en el análisis de combinaciones de
+                enteros y la
+                dificultad computacional para algunos problemas (como lo puede ser el problema de Frobenius en
+                dimensiones superiores),
+                pueden inspirar la construcción de problemas complejos en criptografía, donde la seguridad se basa en la
+                complejidad de
+                algunas operaciones aritméticas.
+            </p>
+            <p id="text"><span class="punto"></span><strong>Automatización y análisis combinatorio.
+                </strong>
+            </p>
+            <p id="text"><span class="triangulo"></span><strong>Modelado de problemas discretos:
+                </strong> solo nos servirá para algunos contextos, pero los semigrupos numéricos pueden usarse para
+                modelar sistemas en los que
+                combinan unidades discretas de recursos, como la planificación de tareas o en la optimización de
+                procesos industriales.
+                En este aspecto queremos ver los posibles estados o configuraciones alcanzables mediante sumas de
+                elementos generadores.
+                A partir de esto podremos diseñar algoritmos que vean soluciones óptimas o detecten ciertos patrones.
+            </p>
+            <p id="text"><span class="triangulo"></span><strong>Teoría de autómatas y lenguajes formales:
+                </strong> los semigrupos numéricos pueden llevarse a la teoría de autómatas en donde se pueden estudiar
+                estructuras algebraicas
+                asociadas a los lenguajes formales. En este caso se exploran los semigrupos de forma más general (no
+                necesariamente
+                numérico), los métodos y conceptos presentan ciertas similitudes que fortalecen el análisis y el
+                entendimiento de los
+                sistemas computacionales. Para ser más concretos, los autómatas finitos deterministas pueden
+                representarse mediante
+                semigrupos de transformación, en donde las transiciones entre estados forman una estructura algebraica
+                que ayuda al
+                estudio del reconocimiento de lenguajes regulares. Por poner un ejemplo en específico, el Teorema de
+                Krohn-Rhodes nos
+                dice que cualquier autómata finito puede derivar en componentes más simples usando semigrupos y
+                monoidales. Otro ejemplo
+                es el Teorema de Schützenberger, donde se caracterizan ciertos lenguajes regulares en términos de
+                semigrupos finitos,
+                ayudando a analizar propiedades como la minimización de autómatas y la complejidad de reconocimiento de
+                las palabras.
+            </p>
+            <p id="text"><span class="punto"></span><strong>Investigación y simulación.
+                </strong>
+            </p>
+            <p id="text"><span class="triangulo"></span><strong>Software y experimentación:
+                </strong> el estudio de semigrupos numéricos ha motivado el desarrollo de herramientas computacionales
+                para la experimentación en
+                álgebra conmutativa y teoría de números. Por ejemplo, hoy en día existen paquetes en software como GAP o
+                SageMath que
+                permiten investigar las propiedades de los semigrupos numéricos. Esto es muy útil tanto en la
+                investigación matemática
+                como en aplicaciones didácticas para el estudio de las ciencias de la computación.
+            </p>
+        </section>
+        <section>
+            <img id="num1" src="imagenes/ordenadorNum.png" width="300" height="300">
+            <span id="infinito">&#8734;</span>
+            <img id="num2" src="imagenes/numCielo.png" width="300" height="300">
+        </section>
+    </main>
+
+    <footer id="f1"><a id="e1" href="documentocontacto.html">Documento de
+            contacto</a>---------------------------------------------------------------------
+        <a id="e1" href="documentacion.pdf">documentacion.pdf</a>
+    </footer>
+</body>
+
+</html>

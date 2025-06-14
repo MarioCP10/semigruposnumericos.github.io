@@ -1,0 +1,230 @@
+#f1 {
+    padding-left: 30%;
+    margin-top: 100px;
+}
+
+#e1 {
+    color: yellow;
+}
+
+#logo {
+    position: absolute;
+    padding-left: 0%;
+    padding-top: 0%;
+}
+
+#SN_principal {
+    color: yellow;
+    display: inline;
+    padding-left: 40%;
+    top: 10%;
+}
+
+body {
+    background-image: url('imagenes/fondo.jpg');
+    background-size: cover;
+    background-attachment: fixed;
+    background-position: center;
+}
+
+.menu,
+header ul {
+    margin: 20px;
+    padding: 0;
+    background-color: black;
+    overflow: hidden;
+}
+
+li {
+    float: left;
+}
+
+li a {
+    display: block;
+    color: white;
+    text-align: center;
+    padding: 20px 30px;
+    text-decoration: none;
+    margin: 0 15px;
+    width: 150px;
+}
+
+li a:hover {
+    background-color: blue;
+}
+
+#tit {
+    color: yellow;
+}
+
+#dato {
+    color: purple;
+}
+
+main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+@keyframes cambiaColor {
+    0% {
+        color: orangered;
+    }
+
+    50% {
+        color: purple;
+    }
+
+    100% {
+        color: blue;
+    }
+}
+
+#SH {
+    animation-name: cambiaColor;
+    animation-duration: 3s;
+    animation-iteration-count: infinite;
+}
+
+#sH {
+    width: 60%;
+    margin: 20px 0;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+.menu {
+    list-style-type: none;
+    margin-top: 20px;
+    padding: 0;
+    background-color: black;
+    overflow: hidden;
+    width: 100%;
+    display: flex;
+}
+
+.menu li {
+    padding: 0px;
+}
+
+.menu li a {
+    color: white;
+    text-decoration: none;
+}
+
+.menu li a:hover {
+    background-color: blue;
+}
+
+.sidebar {
+    position: absolute;
+    left: 0;
+    top: 160px;
+    width: 250px;
+    background-color: black;
+    padding: 10px;
+}
+
+.sidebar ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.sidebar ul li {
+    margin: 10px 0;
+}
+
+.sidebar ul li a {
+    display: block;
+    color: white;
+    text-decoration: none;
+    padding: 10px;
+    background-color: green;
+    text-align: center;
+}
+
+.sidebar ul li a:hover {
+    background-color: purple;
+}
+
+.punto {
+    width: 10px;
+    height: 10px;
+    background-color: green;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+#sh1 {
+    padding-right: 63%;
+}
+
+#sh2 {
+    padding-right: 2%;
+}
+
+#sh3 {
+    padding-right: 5.5%;
+}
+
+#text {
+    text-align: justify;
+    padding-left: 2%;
+}
+
+.form-peque {
+    font-size: 0.8em;
+}
+
+table {
+    border-collapse: collapse;
+    width: 80%;
+    margin: 10px auto;
+}
+
+table,
+th,
+td {
+    border: 1px solid #ccc;
+}
+
+th,
+td {
+    padding: 8px;
+    text-align: center;
+}
+
+/*Se asegura que los contenedores de clasificación se muestren en columnas */
+#frobFijo .result-section {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 4em;
+    flex-wrap: wrap;
+    margin-top: 1em;
+}
+
+/*Contenido centrado en cada bloque */
+#frobFijo .result-section .bloque {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#frobFijo .result-section table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 0.5em;
+}
+
+#frobFijo .result-section th,
+#frobFijo .result-section td {
+    border: 1px solid #ccc;
+    padding: 0.5em;
+    text-align: center;
+}
