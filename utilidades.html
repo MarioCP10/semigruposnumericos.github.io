@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Utilidades SN</title>
+    <link rel="stylesheet" type="text/css" href="utilidades.css" />
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script type="text/javascript" id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+
+<body>
+    <header>
+        <img id="logo" src="imagenes/logo.png" alt="logo de la página del TFG" width="50" height="50">
+        <h1 id="SN_principal">SEMIGRUPOS NUMÉRICOS</h1>
+        <ul>
+            <li><a href="index.html">Inicio</a></li>
+            <li><a href="visionmatematica.html">Visión matemática</a></li>
+            <li><a href="visioninformatica.html">Visión informática</a></li>
+            <li><a href="utilidades.html">Utilidades</a></li>
+            <li><a href="informacion.html">Información</a></li>
+            <li><a href="experiencias.html">Experiencias</a></li>
+        </ul>
+    </header>
+
+    <main>
+        <section>
+            <nav class="sidebar">
+                <ul>
+                    <li><a href="nFrobenius.html">Número de Frobenius</a></li>
+                    <li><a href="genero.html">Género</a></li>
+                    <li><a href="conductor.html">Conductor</a></li>
+                    <li><a href="serieHilbert.html">Serie de Hilbert</a></li>
+                    <li><a href="esminimal.html">Sistema Minimal</a></li>
+                    <li><a href="conjuntosApery.html">Conjuntos de Apéry</a></li>
+                    <li><a href="sistemaInfinito.html">Sistema Minimal Infinito</a></li>
+                </ul>
+            </nav>
+        </section>
+
+        <section id="menu2">
+            <nav class="sidebar">
+                <ul>
+                    <li><a href="automatas.html">Automatas</a></li>
+                    <li><a href="seguridad.html">Seguridad</a></li>
+                    <li><a href="mochila.html">Mochila</a></li>
+                    <li><a href="generoFijo.html">Género Fijo</a></li>
+                    <li><a href="numeroFrobFijo.html">Número Frobenius Fijo</a></li>
+                    <li><a href="generoMulti.html">Género y Multiplicidad Fijos</a></li>
+                </ul>
+            </nav>
+        </section>
+
+        <section id="sH">
+            <h2 id="SH">UTILIDADES DE LOS SEMIGRUPOS NUMÉRICOS</h2>
+
+            <h3>1. Matemáticas</h3>
+            <p>Los semigrupos numéricos aportan múltiples herramientas en matemáticas:</p>
+            <ul id="util">
+                <li><strong>Teoría de números:</strong> resolución de ecuaciones diofánticas y cálculo del número de
+                    Frobenius,
+                    aportando perspectivas novedosas en problemas de representabilidad de enteros.</li>
+                <li><strong>Álgebra conmutativa:</strong> estudio de anillos semigraduados y clasificación de
+                    singularidades en
+                    curvas algebraicas, lo que facilita el análisis estructural de objetos algebraicos complejos.</li>
+                <li><strong>Combinatoria:</strong> particiones y conteos mediante la representación de enteros como
+                    sumas de
+                    generadores, lo cual optimiza algoritmos de conteo y reducción de espacios de búsqueda.</li>
+                <li><strong>Optimización:</strong> establecimiento de cotas y restricciones en problemas discretos
+                    mediante
+                    invariantes como el conductor, proporcionando límites precisos que ayudan a la formulación y
+                    solución de
+                    problemas.</li>
+            </ul>
+
+            <h3>2. Informática</h3>
+            <p>En ingeniería informática, los semigrupos numéricos ofrecen soluciones innovadoras gracias a su
+                estructura
+                algebraica. Entre sus aplicaciones destacan:</p>
+            <ul id="util">
+                <li><strong>Codificación y teoría de la información:</strong> diseño de códigos óptimos y esquemas de
+                    compresión
+                    basados en representaciones únicas, lo que mejora significativamente el almacenamiento y la
+                    transmisión de
+                    datos.</li>
+                <li><strong>Algoritmos de representabilidad:</strong> determinación rápida de si un valor es alcanzable
+                    (en
+                    problemas como la mochila o el cambio de moneda), lo que reduce la complejidad computacional y
+                    agiliza la
+                    búsqueda de soluciones.</li>
+                <li><strong>Criptografía:</strong> desarrollo de protocolos seguros fundamentados en problemas
+                    algebraicos de
+                    semigrupos, ofreciendo nuevas alternativas para construir sistemas criptográficos basados en
+                    problemas
+                    computacionalmente difíciles.</li>
+                <li><strong>Teoría de autómatas y lenguajes formales:</strong> modelado algebraico de autómatas finitos
+                    que
+                    facilita la optimización de compiladores y la verificación formal en el procesamiento de lenguajes
+                    de
+                    programación.</li>
+                <li><strong>Análisis de complejidad y optimización de algoritmos:</strong> uso de invariantes
+                    semigrupales para
+                    modelar costes y evaluar la eficiencia de algoritmos, permitiendo mejoras sustanciales en el
+                    rendimiento de
+                    aplicaciones.</li>
+                <li><strong>Optimización en sistemas distribuidos:</strong> análisis de estructuras de datos para
+                    identificar
+                    redundancias y optimizar la asignación de recursos, contribuyendo a la escalabilidad y eficiencia en
+                    entornos distribuidos.</li>
+                <li><strong>Sistemas de bases de datos:</strong> aplicación en el análisis estructural de datos para
+                    detectar
+                    patrones y optimizar consultas, mejorando la organización y el procesamiento de grandes volúmenes de
+                    información.</li>
+                <li><strong>Corrección de errores y codificación avanzada:</strong> desarrollo de métodos robustos de
+                    detección
+                    y corrección de errores en la transmisión de datos, esenciales para garantizar la integridad en
+                    comunicaciones digitales.</li>
+            </ul>
+
+            <h3>3. Ejemplo práctico: problema de la mochila</h3>
+            <p>
+                En el <em>problema de la mochila</em>, un conjunto de pesos
+                <code>{a<sub>1</sub>, …, a<sub>n</sub>}</code>
+                genera el semigrupo
+                <code>S = {∑ a<sub>i</sub> x<sub>i</sub> ∣ x<sub>i</sub> ∈ ℕ}</code>. Mediante el uso de invariantes:
+            </p>
+            <ul id="util">
+                <li><strong>Número de Frobenius:</strong> identifica el máximo peso inalcanzable, optimizando la
+                    búsqueda de
+                    combinaciones válidas.</li>
+                <li><strong>Conductor:</strong> establece la cota a partir de la cual todo peso es representable,
+                    reduciendo el
+                    espacio computacional.</li>
+                <li><strong>Programación dinámica:</strong> marca progresivamente los pesos alcanzables, permitiendo
+                    algoritmos
+                    más eficientes en la solución del problema.</li>
+            </ul>
+
+            <h3>4. Conclusión y nuevas perspectivas</h3>
+            <p>
+                Los semigrupos numéricos constituyen un puente clave entre la teoría matemática y las aplicaciones
+                prácticas en
+                informática. Sus invariantes y estructuras facilitan el diseño de algoritmos seguros, eficientes y
+                optimizados,
+                y abren nuevas posibilidades en áreas tan diversas como la criptografía, la verificación formal y la
+                optimización de sistemas distribuidos. A medida que la investigación avanza, es probable que aparezcan
+                más
+                aplicaciones en el desarrollo de tecnologías emergentes y en la solución de retos computacionales
+                complejos.
+            </p>
+        </section>
+
+    </main>
+
+    <footer id="f1"><a id="e1" href="documentocontacto.html">Documento de
+            contacto</a>---------------------------------------------------------------------
+        <a id="e1" href="documentacion.pdf">documentacion.pdf</a>
+    </footer>
+</body>
+
+</html>

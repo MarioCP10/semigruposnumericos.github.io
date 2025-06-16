@@ -1,0 +1,74 @@
+#datos_desarrollador {
+    border: 10px solid green;
+    background-color: white;
+    padding: 20px;
+    width: 400px;
+    text-align: center;
+    margin: 50px auto;
+    border-radius: 10px;
+    box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+#f1 {
+    padding-left: 30%;
+    margin-top: 90px;
+}
+
+#e1 {
+    color: yellow;
+}
+
+#logo {
+    position: absolute;
+    padding-left: 0%;
+    padding-top: 0%;
+}
+
+#SN_principal {
+    color: yellow;
+    display: inline;
+    padding-left: 40%;
+    top: 10%;
+}
+
+body {
+    background-image: url('imagenes/fondo.jpg');
+    background-size: cover;
+    background-attachment: fixed;
+    background-position: center;
+}
+
+ul {
+    margin: 20px;
+    padding: 0;
+    background-color: black;
+    overflow: hidden;
+}
+
+li {
+    float: left;
+}
+
+li a {
+    display: block;
+    color: white;
+    text-align: center;
+    padding: 20px 30px;
+    text-decoration: none;
+    margin: 0 15px;
+    width: 150px;
+}
+
+li a:hover {
+    background-color: blue;
+}
+
+#tit {
+    color: black;
+    font-weight: bold;
+}
+
+#dato {
+    color: black;
+    font-size: 16px;
+}

@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seguridad</title>
+    <link rel="stylesheet" type="text/css" href="seguridad.css" />
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        let mapDinamico = {}; //mapa dinámico para la contraseña
+        let contraGenerada = ""; //se almacena las contraseñas dinámicas
+        let interContrasenia = null; //control de intervalo de generación
+
+        /**
+         * @function mcd
+         * @description Calcula el máximo común divisor (MCD) de dos números usando Euclides.
+         * @param {number} a – Primer operando (mayor o igual a 0)
+         * @param {number} b – Segundo operando (mayor o igual a 0)
+         * @returns {number} – El MCD de a y b.
+         */
+        function mcd(a, b) {
+            while (b !== 0) {
+                let temp = b;
+                b = a % b;
+                a = temp;
+            }
+            return a;
+        }
+
+        /**
+         * @function reducemcd
+         * @description Calcula el MCD de todos los elementos de un array.
+         * @param {number[]} arr – Array de enteros positivos.
+         * @returns {number} – MCD de todos los elementos.
+         */
+        function reducemcd(arr) {
+            return arr.reduce((a, b) => mcd(a, b));
+        }
+
+        /**
+         * @function vaciarResultados
+         * @description Limpia todos los campos y detiene la generación automática.
+         */
+        function vaciarResultados() {
+            //Se detiene la generación de contraseñas
+            if (interContrasenia !== null) {
+                clearInterval(interContrasenia);
+                interContrasenia = null; //Se asegura de que no quede activo
+            }
+
+            // Vaciar los campos y secciones
+            document.getElementById("inputNumeros").value = "";
+            document.getElementById("resultado").textContent = "";
+            document.getElementById("contraseniaDinamica").textContent = "";
+            document.getElementById("verificacionMensaje").textContent = "";
+            document.getElementById("inputVerificar").value = "";
+        }
+
+        /**
+         * @function calcular
+         * @description Valida S, comprueba que presente un sistema de generadores minimal e inicia la generación de contraseña.
+         */
+        function calcular() {
+            const inputNumeros = document.getElementById("inputNumeros").value;
+            const partes = inputNumeros.split(",").map(num => num.trim());
+            const numeros = inputNumeros.split(",").map(num => num.trim()).filter(num => num !== "").map(Number);
+
+            for (let p of partes) {
+                if (!/^\d+$/.test(p) || numeros.some(num => isNaN(num) || num <= 0)) {
+                    alert("Solo se permiten números enteros positivos (el 0 no genera combinación de contraseña).");
+                    vaciarResultados();
+                    return;
+                }
+            }
+
+            //Se debe de comprobar que cumple el criterio de semigrupo numérico
+            if (reducemcd(numeros) !== 1) {
+                alert("El conjunto no representa un semigrupo válido (MCD ≠ 1).");
+                vaciarResultados();
+                return;
+            }
+
+            const esMinimalResult = esMinimal(numeros);
+            const resultado = document.getElementById("resultado");
+
+            if (esMinimalResult === true) {
+                resultado.textContent = "El semigrupo metido presenta un conjunto de generadores minimal.";
+                generaContraseniaDinamica(numeros);
+            } else {
+                resultado.textContent = `El semigrupo no presenta generadores minimal en su totalidad. Generadores corregidos: ${esMinimalResult.join(", ")}`;
+            }
+        }
+
+        /**
+         * @function generaContraseniaDinamica
+         * @description Crea y actualiza periódicamente una contraseña de 16 caracteres.
+         * @param {number[]} S – Conjunto minimal de generadores.
+         */
+        function generaContraseniaDinamica(S) {
+            const terminos = formaExpandida(S);
+            actualizaCharMap(terminos);
+
+            interContrasenia = setInterval(() => {
+                actualizaCharMap(terminos);
+                generaContrasenia(terminos);
+            }, 10000);
+
+            generaContrasenia(terminos);
+        }
+
+        /**
+         * @function actualizaCharMap
+         * @description Genera un nuevo mapeo aleatorio ASCII 33–126 para cada término.
+         * @param {number[]} terminos – Términos del semigrupo.
+         */
+        function actualizaCharMap(terminos) {
+            mapDinamico = {};
+            terminos.forEach((num, index) => {
+                mapDinamico[num] = String.fromCharCode(33 + ((index + Math.floor(Math.random() * 94)) % 94)); //Se usará ASCII 33-126
+            });
+        }
+
+        /**
+         * @function generaContrasenia
+         * @description Ensambla 16 caracteres aleatorios según mapDinamico.
+         * @param {number[]} terminos – Términos del semigrupo.
+         */
+        function generaContrasenia(terminos) {
+            contraGenerada = "";
+            for (let i = 0; i < 16; i++) {
+                const terminoRand = terminos[Math.floor(Math.random() * terminos.length)];
+                contraGenerada += mapDinamico[terminoRand];
+            }
+            document.getElementById("contraseniaDinamica").textContent = contraGenerada;
+        }
+
+        /**
+         * @function verificaContrasenia
+         * @description Comprueba si la contraseña ingresada coincide con la última generada.
+         */
+        function verificaContrasenia() {
+            const contraseniaEntrada = document.getElementById("inputVerificar").value;
+            const mensaje = document.getElementById("verificacionMensaje");
+
+            if (contraseniaEntrada === contraGenerada) {
+                mensaje.textContent = "✅ La contraseña es correcta.";
+                mensaje.style.color = "green";
+            } else {
+                mensaje.textContent = "❌ La contraseña no coincide.";
+                mensaje.style.color = "red";
+            }
+        }
+
+        /**
+         * @function formaExpandida
+         * @description Expande S hasta un límite para obtener todos los enteros alcanzables.
+         * @param {number[]} S – Generadores de semigrupo (mcd=1).
+         * @param {number} [numTerminos=1000] – Factor para definir límite = numTerminos·min(S).
+         * @returns {number[]} – Array ordenado de enteros alcanzables.
+         */
+        function formaExpandida(S, numTerminos = 1000) {
+            let terminos = new Set([0]);
+            let cola = [0];
+            let minS = Math.min(...S);
+            let limite = numTerminos * minS;
+
+            while (cola.length) {
+                let t = cola.shift();
+                for (let a of S) {
+                    let nuevoTermino = t + a;
+                    if (nuevoTermino <= limite && !terminos.has(nuevoTermino)) {
+                        terminos.add(nuevoTermino);
+                        cola.push(nuevoTermino);
+                    }
+                }
+            }
+
+            return [...terminos].sort((a, b) => a - b);
+        }
+
+        /**
+         * @function esMinimal
+         * @description Verifica si S es minimal o devuelve el subconjunto minimal.
+         * @param {number[]} S – Generadores (mcd=1).
+         * @returns {true|number[]} – true si es minimal; array con generadores mínimos si no.
+         */
+        function esMinimal(S) {
+            if (S.length === 1) return true;
+
+            const elementosEliminar = new Set();
+            const minS = Math.min(...S);
+            const hilbertExpandida = formaExpandida(S, 10 * minS);
+            let consecutivos = 0;
+
+            for (let i = 0, prev = -1; i < hilbertExpandida.length; i++) {
+                if (hilbertExpandida[i] !== prev + 1) {
+                    consecutivos = 1;
+                } else {
+                    consecutivos++;
+                    if (consecutivos >= minS) break;
+                }
+                prev = hilbertExpandida[i];
+            }
+
+            if (consecutivos >= minS) {
+                for (let num of S) {
+                    if (!hilbertExpandida.includes(num)) {
+                        elementosEliminar.add(num);
+                    }
+                }
+            }
+
+            for (let num of S) {
+                const subConjunto = S.filter(x => x !== num);
+                const expandida = formaExpandida(subConjunto, num + 1);
+                if (expandida.includes(num)) {
+                    elementosEliminar.add(num);
+                }
+            }
+
+            return elementosEliminar.size ? S.filter(num => !elementosEliminar.has(num)) : true;
+        }
+    </script>
+
+    <script>
+        /**
+         * @function ejemplos
+         * @description Muestra u oculta la sección de ejemplos.
+         */
+        function ejemplos() {
+            var ejemplosDiv = document.getElementById("ejemplo");
+            if (ejemplosDiv.style.display === "none") {
+                ejemplosDiv.style.display = "block";
+            } else {
+                ejemplosDiv.style.display = "none";
+            }
+        }
+    </script>
+    <script>
+        /**
+         * @function propiedades
+         * @description Muestra u oculta la sección de propiedades.
+         */
+        function propiedades() {
+            var propiedadesDiv = document.getElementById("propiedades");
+            if (propiedadesDiv.style.display === "none") {
+                propiedadesDiv.style.display = "block";
+            } else {
+                propiedadesDiv.style.display = "none";
+            }
+        }
+    </script>
+    <script>
+        /**
+         * @function utilidades
+         * @description Muestra u oculta la sección de utilidades.
+         */
+        function utilidades() {
+            var utilidadesDiv = document.getElementById("utilidades");
+            if (utilidadesDiv.style.display === "none") {
+                utilidadesDiv.style.display = "block";
+            } else {
+                utilidadesDiv.style.display = "none";
+            }
+        }
+    </script>
+</head>
+
+<body>
+    <header>
+        <img id="logo" src="imagenes/logo.png" alt="logo de la pagina del tfg" width="50" height="50">
+
+        <h1 id="SN_principal">SEMIGRUPOS NUMÉRICOS</h1>
+
+        <ul>
+            <li><a href="index.html">Inicio</a></li>
+            <li><a href="visionmatematica.html">Visión matemática</a></li>
+            <li><a href="visioninformatica.html">Visión informática</a></li>
+            <li><a href="utilidades.html">Utilidades</a></li>
+            <li><a href="informacion.html">Información</a></li>
+            <li><a href="experiencias.html">Experiencias</a></li>
+        </ul>
+
+    </header>
+    <main>
+        <section>
+            <nav class="sidebar">
+                <ul>
+                    <li><a href="automatas.html">Automatas</a></li>
+                    <li><a href="seguridad.html">Seguridad</a></li>
+                    <li><a href="mochila.html">Mochila</a></li>
+                    <li><a href="generoFijo.html">Género Fijo</a></li>
+                    <li><a href="numeroFrobFijo.html">Número Frobenius Fijo</a></li>
+                    <li><a href="generoMulti.html">Género y Multiplicidad Fijos</a></li>
+                </ul>
+            </nav>
+        </section>
+
+        <section id="sH">
+            <h2 id="SH">SEGURIDAD</h2>
+            <p>El uso del sistema de generadores minimal de un semigrupo numérico, los caules recordemos que son
+                conjuntos cerrados
+                bajo la suma y
+                caracterizados por
+                generadores enteros no negativos que no tienen divisores
+                comunes (MCD = 1). Estos semigrupos tienen propiedades únicas que los hacen ideales para generar
+                combinaciones numéricas
+                potentes y complejas para generar contraseñas ultra seguras con el objetivo de poder cifrar nuestros
+                programas.</p>
+            <button onclick="propiedades()">Propiedades</button>
+            <div id="propiedades" style="display: none;">
+                <p id="text1"><span class="punto"></span><strong>Validación matemática:</strong> el usuario se encarga
+                    de introducir un
+                    conjunto de números, y el programa verifica si forma un semigrupo numérico con un sistema de
+                    generadores minimal. En caso de que no lo sea,
+                    no se genera nada.
+                </p>
+                <p id="text1"><span class="punto"></span><strong>Generación de contraseñas dinámicas:</strong> usando
+                    las
+                    combinaciones posibles generadas por el semigrupo, el programa crea contraseñas únicas y seguras.
+                    Estas
+                    contraseñas cambian dinámicamente cada 10 segundos, lo que refuerza la seguridad en escenarios donde
+                    la protección
+                    constante es crucial.
+                </p>
+                <p id="text1"><span class="punto"></span><strong>Sincronización y verificación:</strong> para que el
+                    usuario puede ver mejor que el procedimiento funciona, se permite a este verificar si la
+                    contraseña ingresada coincide con la que está activa en el momento, fomentando un
+                    sistema dinámico y sincronizado.
+                </p>
+            </div>
+            <button onclick="ejemplos()">Ejemplos</button>
+            <div id="ejemplo" style="display: none;">
+                <p id="text1"> Supongamos que se introduce el semigrupo numérico <span
+                        class="form-peque">\(\langle3,5\rangle\)</span>. Las
+                    combinaciones que se
+                    pueden hacer con este semigrupo son {0, 3, 5, 6, 8, 9, 10,
+                    12, ...}. Este
+                    semigrupo produce números combinando 3 y 5 mediante combinaciones lineales no negativas. Las
+                    contraseñas generadas son
+                    únicas y
+                    cambian cada 10
+                    segundos.
+                </p>
+
+                <p id="text1"><span class="punto"></span><strong>Ejemplo de contraseña inicial:</strong> !@#D5wZ1&aQdm
+                </p>
+
+                <p id="text1"><span class="punto"></span><strong>Contraseña tras 10 segundos:</strong> #%Ez7v^KNLm4 </p>
+
+                <p id="text1"> Supongamos que se introduce el semigrupo numérico <span
+                        class="form-peque">\(\langle4,7\rangle\)</span>. Las
+                    combinaciones que se
+                    pueden hacer con este semigrupo son {0, 4, 7, 8, 11, 12, 14,
+                    ...}. En este caso, el semigrupo combina 4 y 7, produciendo números con una estructura equilibrada.
+                </p>
+
+                <p id="text1"><span class="punto"></span><strong>Ejemplo de contraseña inicial:</strong> $W@gKl9&3dX4!
+                </p>
+
+                <p id="text1"><span class="punto"></span><strong>Contraseña tras 10 segundos:</strong> Qr#7v@22Ym&E^
+                </p>
+
+                <p id="text1"> Supongamos que se introduce el semigrupo numérico <span
+                        class="form-peque">\(\langle6,10,15\rangle\)</span>. Las
+                    combinaciones que
+                    se
+                    pueden hacer con este semigrupo son {0, 6, 10, 12, 15, 16, 18, 20, ...}.
+                </p>
+
+                <p id="text1"><span class="punto"></span><strong>Ejemplo de contraseña inicial:</strong> X#9v&JwOe3^2z
+                </p>
+
+                <p id="text1"><span class="punto"></span><strong>Contraseña tras 10 segundos:</strong> AqL8%@6mZtYD!
+                </p>
+
+                <p id="text1"> En el caso de que no se introduzca un semigrupo numérico, como puede
+                    ser <span class="form-peque">\(\langle2,4\rangle\)</span>, entonces
+                    el programa
+                    notifica al
+                    usuario y no genera
+                    contraseñas dinámicas hasta que se ingrese un semigrupo numérico válido.
+                </p>
+            </div>
+
+            <button onclick="utilidades()">Utilidades</button>
+            <div id="utilidades" style="display: none;">
+                <p id="text1"><span class="punto"></span><strong>Generación de contraseñas seguras y dinámicas:
+                    </strong>utiliza las combinaciones únicas generadas por el semigrupo numérico de generadores minimal
+                    para crear
+                    contraseñas dinámicas que cambian
+                    automáticamente cada 10 segundos. Estas contraseñas son ideales para sistemas que requieren alta
+                    seguridad, ya que son prácticamente impredecibles y
+                    difíciles de descifrar.
+                </p>
+                <p id="text1"><span class="punto"></span><strong>Verificación de contraseñas en tiempo real:
+                    </strong>presenta una funcionalidad para comprobar si una contraseña ingresada coincide con la
+                    generada dinámicamente en ese momento. Esto
+                    asegura un sistema sincronizado, útil para aplicaciones como acceso a sistemas sensibles,
+                    autenticación en plataformas o
+                    validación de datos en entornos críticos.
+                </p>
+                <p id="text1"><span class="punto"></span><strong>Validación matemática y correcciones: </strong>se
+                    permite validar si un conjunto de números constituye un semigrupo de generadores minimal. Si no lo
+                    es, sugiere cómo
+                    corregirlo. Esto
+                    fomenta el aprendizaje y la correcta aplicación de conceptos matemáticos.
+                </p>
+                <p id="text1"><span class="punto"></span><strong>Aplicación en criptografía: </strong>se explotan las
+                    propiedades únicas de los semigrupos numéricos de para crear un mecanismo
+                    seguro de
+                    generación de
+                    claves dinámicas. Esto tiene aplicaciones directas en la criptografía, como sistemas de claves
+                    temporales o códigos de
+                    acceso de un solo uso (OTP).
+                </p>
+                <p id="text1"><span class="punto"></span><strong>Seguridad para entornos dinámicos:
+                    </strong>la capacidad de sincronizar contraseñas dinámicas con tiempos exactos es ideal para
+                    sistemas de autenticación que necesitan
+                    máxima protección, como bancos, redes empresariales o sistemas de acceso físico con autenticación
+                    digital.
+                </p>
+                <p id="text1"><span class="punto"></span><strong>Entendimiento práctico de semigrupos numéricos:
+                    </strong>es una manera interactiva de comprender cómo funcionan los sistemas minimales de
+                    generadores de los semigrupos numéricos de,
+                    mostrando cómo generan
+                    combinaciones y cómo estas se pueden usar en problemas prácticos.
+                </p>
+            </div>
+        </section>
+
+        <section id="sH">
+            <h2>Inserta un semigrupo numérico con generadores minimal</h2>
+            <label for="inputNumeros">Introduce los elementos del semigrupo separados por comas:</label>
+            <input type="text" id="inputNumeros" placeholder="Ej. 4,5,6,7">
+            <button onclick="calcular()">Generar Contraseña Dinámica</button>
+            <button onclick="vaciarResultados()">Vaciar</button>
+            <p id="resultado"></p>
+        </section>
+
+        <section id="sH">
+            <h3>Contraseña dinámica:</h3>
+            <p id="contraseniaDinamica"></p>
+        </section>
+
+        <section id="sH">
+            <h3>Verificar contraseña</h3>
+            <label for="inputVerificar">Introduce la contraseña:</label>
+            <input type="text" id="inputVerificar" placeholder="Contraseña dinámica">
+            <button onclick="verificaContrasenia()">Verificar</button>
+            <p id="verificacionMensaje"></p>
+        </section>
+    </main>
+
+    <footer id="f1"><a id="e1" href="documentocontacto.html">Documento de
+            contacto</a>---------------------------------------------------------------------
+        <a id="e1" href="documentacion.pdf">documentacion.pdf</a>
+    </footer>
+</body>
+
+</html>

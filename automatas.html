@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autómatas</title>
+    <link rel="stylesheet" type="text/css" href="automatas.css" />
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        let numFrobenius = null;
+        let semigrupoHilbert = new Set();
+
+        /**
+         * @function mcd
+         * @description Calcula el máximo común divisor (MCD) de dos números usando Euclides.
+         * @param {number} a – Primer operando (mayor o igual a 0)
+         * @param {number} b – Segundo operando (mayor o igual a 0)
+         * @returns {number} – El MCD de a y b.
+         */
+        function mcd(a, b) {
+            while (b !== 0) {
+                let temp = b;
+                b = a % b;
+                a = temp;
+            }
+            return a;
+        }
+
+        /**
+         * @function reducemcd
+         * @description Calcula el MCD de todos los elementos de un array.
+         * @param {number[]} arr – Array de enteros positivos.
+         * @returns {number} – MCD de todos los elementos.
+         */
+        function reducemcd(arr) {
+            return arr.reduce((a, b) => mcd(a, b));
+        }
+
+        /**
+         * @function formaExpandida
+         * @description Genera primeros términos de la forma expandida de Hilbert para S.
+         * @param {number[]} S – Generadores del semigrupo (mcd=1).
+         * @param {number} [num_terms=100] – Número de bloques de tamaño min(S) a expandir.
+         * @returns {number[]} – Array ordenado con los enteros alcanzables menores o iguales a num_terms·min(S).
+         * @sideeffects – Actualiza la variable global semigrupoHilbert (Set).
+         */
+        function formaExpandida(S, num_terms = 100) {
+            let terms = new Set([0]);
+            let minS = Math.min(...S);
+
+            for (let i = 0; i < num_terms * minS; i++) {
+                let nuevosTerminos = new Set();
+                terms.forEach(t => {
+                    S.forEach(a => {
+                        if (t + a <= num_terms * minS) {
+                            nuevosTerminos.add(t + a);
+                        }
+                    });
+                });
+                nuevosTerminos.forEach(t => terms.add(t));
+            }
+
+            semigrupoHilbert = terms;
+            return Array.from(terms).sort((a, b) => a - b);
+        }
+
+        /**
+         * @function nFrob
+         * @description Calcula el número de Frobenius de un conjunto S de generadores.
+         * @param {number[]} S – Conjunto de generadores (todos > 0).
+         * @returns {(number|string)} – Número de Frobenius, o –1 si S contiene 1,
+         *                              o mensaje de error si mcd(S)!=1 o |S|<2.
+         */
+        function nFrob(S) {
+            if (S.includes(1)) {
+                return -1;
+            }
+
+            if (S.length < 2 || reducemcd(S) !== 1) {
+                return "No se puede calcular";
+            }
+
+            S.sort((a, b) => a - b);
+            let valorMax = S[S.length - 1] * S[S.length - 2];
+            let alcanzable = Array(valorMax + 1).fill(false);
+            alcanzable[0] = true;
+
+            for (let i = 1; i <= valorMax; i++) {
+                for (let a of S) {
+                    if (i - a >= 0 && alcanzable[i - a]) {
+                        alcanzable[i] = true;
+                        break;
+                    }
+                }
+            }
+
+            for (let i = valorMax; i >= 0; i--) {
+                if (!alcanzable[i]) {
+                    return i;
+                }
+            }
+            return "No se puede calcular";
+        }
+
+        /**
+         * @function calcular
+         * @description Orquesta la lectura de S, validación, cálculo de Frobenius y expansión.
+         * @sideeffects – Habilita el campo de verificación tras calcular.
+         */
+        function calcular() {
+            let entrada = document.getElementById("inputNumeros").value;
+            let numeros = entrada.split(",").map(n => parseInt(n.trim())).filter(n => !isNaN(n) && n > 0);
+            let partes = entrada.split(",").map(s => s.trim());
+
+            for (let p of partes) {
+                if (!/^\d+$/.test(p)) {
+                    alert("Solo se permiten números enteros no negativos.");
+                    vaciarResultados();
+                    return;
+                }
+            }
+
+            //Se debe de comprobar que cumple el criterio de semigrupo numérico
+            if (reducemcd(numeros) !== 1) {
+                alert("El conjunto de generadores no forma un semigrupo numérico válido (MCD ≠ 1).");
+                vaciarResultados();
+                return;
+            }
+
+            numFrobenius = nFrob(numeros);
+            formaExpandida(numeros);
+
+            document.getElementById("resultadoFrobenius").innerText = numFrobenius;
+
+            document.getElementById("inputVerificar").disabled = false;
+            document.getElementById("botonVerificar").disabled = false;
+        }
+
+        /**
+         * @function numeroEnSemigrupo
+         * @description Verifica lista de números y muestra si pertenecen al semigrupo.
+         */
+        function numeroEnSemigrupo() {
+            let entrada = document.getElementById("inputVerificar").value;
+            let numeros = entrada.split(",").map(n => parseInt(n.trim())).filter(n => !isNaN(n));
+            let partes = entrada.split(",").map(s => s.trim());
+            let resultadoPert = document.getElementById("resultadoPertenencia");
+            resultadoPert.innerHTML = "";
+
+            for (let p of partes) {
+                if (!/^\d+$/.test(p)) {
+                    alert("Solo se permiten números enteros no negativos.");
+                    vaciarResultados();
+                    return;
+                }
+            }
+
+            numeros.forEach(numero => {
+                let resultado = document.createElement("li");
+                resultado.style.marginBottom = "10px";
+
+                if (numero === 0) {
+                    resultado.textContent = `El número ${numero} pertenece al semigrupo (0 siempre se encuentra en semigrupos).`;
+                    resultado.style.color = "green";
+                } else if (numero > numFrobenius) {
+                    resultado.textContent = `El número ${numero} pertenece al semigrupo (mayor que el número de Frobenius).`;
+                    resultado.style.color = "green";
+                } else if (semigrupoHilbert.has(numero)) {
+                    resultado.textContent = `El número ${numero} pertenece al semigrupo (generado por la Serie de Hilbert).`;
+                    resultado.style.color = "green";
+                } else {
+                    resultado.textContent = `El número ${numero} NO pertenece al semigrupo (no se puede generar con el conjunto).`;
+                    resultado.style.color = "red";
+                }
+
+                resultadoPert.appendChild(resultado);
+            });
+        }
+
+        /**
+         * @function vaciarResultados
+         * @description Limpia todos los campos de entrada y salida, y deshabilita botones.
+         */
+        function vaciarResultados() {
+            document.getElementById("resultadoFrobenius").innerText = "";
+            document.getElementById("resultadoPertenencia").innerHTML = "";
+            document.getElementById("inputVerificar").value = "";
+            document.getElementById("inputNumeros").value = "";
+            document.getElementById("botonVerificar").disabled = true;
+        }
+    </script>
+    <script>
+        /**
+         * @function ejemplos
+         * @description Muestra u oculta la sección de ejemplos.
+         */
+        function ejemplos() {
+            var ejemplosDiv = document.getElementById("ejemplo");
+            if (ejemplosDiv.style.display === "none") {
+                ejemplosDiv.style.display = "block";
+            } else {
+                ejemplosDiv.style.display = "none";
+            }
+        }
+    </script>
+    <script>
+        /**
+         * @function propiedades
+         * @description Muestra u oculta la sección de propiedades.
+         */
+        function propiedades() {
+            var propiedadesDiv = document.getElementById("propiedades");
+            if (propiedadesDiv.style.display === "none") {
+                propiedadesDiv.style.display = "block";
+            } else {
+                propiedadesDiv.style.display = "none";
+            }
+        }
+    </script>
+    <script>
+        /**
+         * @function utilidades
+         * @description Muestra u oculta la sección de utilidades.
+         */
+        function utilidades() {
+            var utilidadesDiv = document.getElementById("utilidades");
+            if (utilidadesDiv.style.display === "none") {
+                utilidadesDiv.style.display = "block";
+            } else {
+                utilidadesDiv.style.display = "none";
+            }
+        }
+    </script>
+</head>
+
+<body>
+    <header>
+        <img id="logo" src="imagenes/logo.png" alt="logo de la pagina del tfg" width="50" height="50">
+
+        <h1 id="SN_principal">SEMIGRUPOS NUMÉRICOS</h1>
+
+        <ul>
+            <li><a href="index.html">Inicio</a></li>
+            <li><a href="visionmatematica.html">Visión matemática</a></li>
+            <li><a href="visioninformatica.html">Visión informática</a></li>
+            <li><a href="utilidades.html">Utilidades</a></li>
+            <li><a href="informacion.html">Información</a></li>
+            <li><a href="experiencias.html">Experiencias</a></li>
+        </ul>
+
+    </header>
+    <main>
+        <section>
+            <nav class="sidebar">
+                <ul>
+                    <li><a href="automatas.html">Automatas</a></li>
+                    <li><a href="seguridad.html">Seguridad</a></li>
+                    <li><a href="mochila.html">Mochila</a></li>
+                    <li><a href="generoFijo.html">Género Fijo</a></li>
+                    <li><a href="numeroFrobFijo.html">Número Frobenius Fijo</a></li>
+                    <li><a href="generoMulti.html">Género y Multiplicidad Fijos</a></li>
+                </ul>
+            </nav>
+        </section>
+
+        <section id="sH">
+            <h2 id="SH">AUTOMÁTAS DE BÚSQUEDA DE ELEMENTOS</h2>
+            <p>Un autómata es una máquina o dispositivo diseñado para realizar tareas de manera automática, siguiendo
+                instrucciones
+                predefinidas o un programa establecido, sin necesidad de intervención humana constante. Los autómatas
+                pueden ser
+                mecánicos, eléctricos o electrónicos, dependiendo de su diseño y propósito.</p>
+            <p id="text1">Los semigrupos numéricos tienen una relación con los autómatas finitos deterministas, el cual
+                es un
+                modelo matemático. El programa creado sigue los principios de los autómatas, este sistema toma como
+                entrada un
+                conjunto de generadores y, mediante
+                reglas predeterminadas, calcula propiedades clave como el número de Frobenius y la serie de Hilbert.
+                Además, permite
+                verificar de forma determinista si un número pertenece o no al semigrupo, simulando transiciones entre
+                estados. Este
+                programa es una demostración práctica de cómo los conceptos teóricos de los autómatas pueden integrarse
+                con el análisis
+                matemático para resolver problemas de manera estructurada y eficiente.</p>
+            <button onclick="propiedades()">Propiedades</button>
+            <div id="propiedades" style="display: none;">
+                <p id="text1"><span class="punto"></span><strong>Estados y transiciones (lógica de
+                        procesamiento):</strong> el “estado” del proceso puede verse como el conjunto de números
+                    generados (por ejemplo, la serie expandida de Hilbert) a
+                    partir de los generadores definidos. Cada entrada (ya sea la introducción de nuevos generadores o de
+                    números a
+                    verificar) desencadena cálculos o “transiciones” en el sistema, que determinan si un número
+                    pertenece o no al semigrupo.
+                </p>
+                <p id="text1"><span class="punto"></span><strong>Determinismo:</strong> dado un conjunto de generadores
+                    y un número para verificar, el programa produce exactamente un resultado sin ambigüedad.
+                    Esto refleja la propiedad determinista de los AFD, donde, para cada estado y entrada, existe una
+                    única transición
+                    definida.
+                </p>
+                <p id="text1"><span class="punto"></span><strong>Aceptación o rechazo (salida final):</strong> la
+                    verificación de pertenencia puede asociarse al concepto de “estado de aceptación”. Si el número se
+                    encuentra en el
+                    conjunto generado (o cumple la condición de ser mayor que el número de Frobenius), se “acepta” que
+                    pertenece al
+                    semigrupo; de lo contrario, se “rechaza”.
+                </p>
+            </div>
+            <button onclick="ejemplos()">Ejemplos</button>
+            <div id="ejemplo" style="display: none;">
+                <p id="text">El programa que se ha hecho en esta sección consta de comprobar que dado un semigrupo
+                    numérico, verificar si los números que inserta el usuario pueden ser generados o no bajo dicho
+                    semigrupo. Para ello se ha usado el número de Frobenius para determinar que aquellos números que
+                    sean mayores a este pueden ser generados bajo combinaciones del conjunto. En caso de que se hayan
+                    introducido números que son menores al número de Frobenius, entonces el autómata genera la serie
+                    expandida de Hilbert para determinar si ese número puede ser generado bajo combinaciones del
+                    conjunto.</p>
+                <p id="text1">
+                    Supongamos que introducimos el semigrupo numérico <span
+                        class="form-peque">\(\langle3,5\rangle\)</span>. Este
+                    conjunto presenta un
+                    conjunto de generadores que se pueden llegar a conseguir a partir de este semigrupo.
+                    Sabiendo que el número de Frobenius es <span class="form-peque">\(7\)</span>, si se introduce en el
+                    programa del autómata
+                    un número mayor a este, entonces se devuelve que puede ser generado por el conjunto
+                    descrito. En el caso de que no se puede generar cierto número bajo dicho conjunto
+                    (en este caso uno de ellos es el <span class="form-peque">\(4\))</span>, entonces el autómata
+                    indicará que no se puede generar bajo
+                    el conjunto
+                    descrito.
+                </p>
+                <p id="text1">
+                    Si introducimos el semigrupo numérico <span class="form-peque">\(\langle10,12,13,15\rangle\)</span>
+                    se
+                    generará un conjunto que presenta
+                    un grupo de generadores que se pueden llegar a conseguir a partir de este semigrupo. Sabiendo
+                    que el número de Frobenius es <span class="form-peque">\(31\)</span>, si se introduce en el programa
+                    del autómata un número
+                    mayor a este, entonces se devuelve que puede ser generado por el conjunto descrito. En el
+                    caso de que no se puede generar cierto número bajo dicho conjunto (por ejemplo el <span
+                        class="form-peque">\(14\)</span> o <span class="form-peque">\(29\))</span>,
+                    entonces el autómata indicará que no se puede generar bajo el conjunto descrito.
+                </p>
+                <p id="text1">
+                    Si introducimos el semigrupo numérico <span class="form-peque">\(\langle1\rangle\)</span> se
+                    generará un
+                    conjunto que presenta
+                    un grupo de generadores que se pueden llegar a conseguir a partir de este semigrupo.
+                    Sabiendo que el número de Frobenius es <span class="form-peque">\(-1\)</span>, si se introduce en el
+                    programa del autómata
+                    un número mayor a este, entonces se devuelve que puede ser generado por el conjunto descrito.
+                    En este caso, todos los números naturales pueden ser generadores bajo combinaciones de <span
+                        class="form-peque">\(\{1\}\)</span>,
+                    luego todos los números pueden ser generados.
+                </p>
+            </div>
+
+            <button onclick="utilidades()">Utilidades</button>
+            <div id="utilidades" style="display: none;">
+                <p id="text1"><span class="punto"></span><strong>Simulación de procesos deterministas: </strong>permite
+                    simular cómo ciertos procesos deterministas pueden modelarse y analizarse—por ejemplo, evaluar la
+                    pertenencia de
+                    un número al conjunto generado mediante reglas precisas. Esto es relevante en áreas de validación,
+                    análisis y
+                    verificación de algoritmos.
+                </p>
+                <p id="text1"><span class="punto"></span><strong>Procesamiento en lote: </strong>aceptar múltiples
+                    entradas y procesarlas de forma homogénea imita el comportamiento de sistemas de procesamiento en
+                    lote, lo que puede ser extendido en la implementación de herramientas para análisis masivo de datos
+                    o la verificación de
+                    propiedades en lenguajes de programación.
+                </p>
+                <p id="text1"><span class="punto"></span><strong>Validación de patrones: </strong>la verificación de
+                    pertenencia de números dentro de un conjunto generado puede verse como una analogía a la validación
+                    de
+                    patrones y la búsqueda de coincidencias, tareas comunes en sistemas de refinamiento de datos y
+                    motores de búsqueda.
+                </p>
+                <p id="text1"><span class="punto"></span><strong>Construcción de estructuras matemáticas para la
+                        seguridad: </strong>los semigrupos numéricos y otros modelos algebraicos tienen aplicaciones en
+                    la generación de claves, protocolos de
+                    seguridad y sistemas de codificación. El enfoque que se le ha dado al autómata es didáctico, pero la
+                    metodología de generar y
+                    analizar conjuntos mediante autómatas puede extenderse al diseño de algoritmos criptográficos.
+                </p>
+                <p id="text1"><span class="punto"></span><strong>Determinismo y predecibilidad: </strong>la verificación
+                    de
+                    pertenencia de números dentro de un conjunto generado puede verse como una analogía a la validación
+                    de
+                    patrones y la búsqueda de coincidencias, tareas comunes en sistemas de refinamiento de datos y
+                    motores de búsqueda.
+                </p>
+                <p id="text1"><span class="punto"></span><strong>Verificación sistemática de propiedades: </strong>al
+                    tratar cada entrada como una transición de estado, el sistema ayuda a visualizar y verificar
+                    formalmente ciertas
+                    propiedades dentro de modelos computacionales. Esto se puede extrapolar a la verificación de
+                    software, donde se analiza
+                    que ciertas condiciones se cumplan de forma sistemática.
+                </p>
+                <p id="text1"><span class="punto"></span><strong>Integración de herramientas de análisis matemático:
+                    </strong>la combinación de cálculos como el número de frobenius y la generación de la serie de
+                    hilbert ofrece una manera de
+                    experimentar con técnicas de análisis y optimización, que pueden ser clave en problemas complejos de
+                    algorítmica y
+                    optimización.
+                </p>
+            </div>
+        </section>
+
+        <section id="sH">
+            <h2>Comprobar si un elemento se encuentra en el semigrupo</h2>
+
+            <label for="inputNumeros">Introduce los elementos del semigrupo separados por comas:</label>
+            <input type="text" id="inputNumeros" placeholder="Ej. 2,3">
+            <button onclick="calcular()">Calcular</button>
+            <button onclick="vaciarResultados()">Vaciar</button>
+
+            <h3>Verificar números</h3>
+            <label for="inputVerificar">Introduce los números separados por comas:</label>
+            <input type="text" id="inputVerificar" placeholder="Ej. 4,7,9" disabled>
+            <button onclick="numeroEnSemigrupo()" disabled id="botonVerificar">Verificar</button>
+        </section>
+
+        <section id="aG">
+            <h3>Resultados:</h3>
+            <p><strong>Número de Frobenius:</strong> <span id="resultadoFrobenius"></span></p>
+            <p><strong>Resultados de los números:</strong></p>
+            <ul id="resultadoPertenencia"></ul>
+        </section>
+
+
+    </main>
+
+    <footer id="f1"><a id="e1" href="documentocontacto.html">Documento de
+            contacto</a>---------------------------------------------------------------------
+        <a id="e1" href="documentacion.pdf">documentacion.pdf</a>
+    </footer>
+</body>
+
+</html>

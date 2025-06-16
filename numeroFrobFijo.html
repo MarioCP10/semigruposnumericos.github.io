@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SN con número de Frob fijo</title>
+    <link rel="stylesheet" type="text/css" href="numeroFrobFijo.css" />
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script type="text/javascript" id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+        </script>
+    <script>
+        /**
+         * @function limpiarSalida
+         * @description Limpia el contenido de los elementos de salida HTML para resultados anteriores.
+         */
+        function limpiarSalida() {
+            document.getElementById("frobFijo").innerHTML = "";
+            document.getElementById("tiempoCalculo").textContent = "";
+        }
+
+        /**
+         * @function semigrupoAString
+         * @description Convierte una lista de generadores en una cadena con formato de semigrupo.
+         * @param {number[]} generadores - Lista de enteros generadores.
+         * @returns {string} Representación en cadena del semigrupo.
+         */
+        function semigrupoAString(generadores) {
+            return "<" + generadores.join(",") + ">";
+        }
+
+        /**
+         * @function corchetesAngulares
+         * @description Alias para formatear la representación del semigrupo.
+         * @param {number[]} generadores - Lista de enteros.
+         * @returns {string} Formato "<a,b,...>"
+         */
+        function corchetesAngulares(generadores) {
+            return semigrupoAString(generadores);
+        }
+
+        /**
+         * @function esRepresentable
+         * @description Determina si un número es representable como combinación de generadores.
+         * @param {number} valor - Número a representar.
+         * @param {number[]} generadores - Lista de generadores.
+         * @returns {boolean} True si valor es representable, false en caso contrario.
+         */
+        function esRepresentable(valor, generadores) {
+            if (valor < 0) return false;
+            let dp = new Array(valor + 1).fill(false);
+            dp[0] = true;
+            for (let i = 0; i <= valor; i++) {
+                if (!dp[i]) continue;
+                for (let g of generadores) {
+                    if (i + g <= valor) {
+                        dp[i + g] = true;
+                    }
+                }
+            }
+            return dp[valor];
+        }
+
+        /**
+         * @function minimizarGeneradores
+         * @description Elimina generadores redundantes del conjunto.
+         * @param {number[]} generadores - Lista de generadores.
+         * @returns {number[]} Lista mínima de generadores.
+         */
+        function minimizarGeneradores(generadores) {
+            generadores.sort((a, b) => a - b);
+            let minimos = [];
+            for (let i = 0; i < generadores.length; i++) {
+                let otros = generadores.slice();
+                otros.splice(i, 1);
+                if (!esRepresentable(generadores[i], otros)) {
+                    minimos.push(generadores[i]);
+                }
+            }
+            return minimos;
+        }
+
+        /**
+         * @function frobeniusValido
+         * @description Verifica si el semigrupo tiene número de Frobenius F.
+         * @param {number[]} generadores - Lista de generadores.
+         * @param {number} F - Número de Frobenius.
+         * @returns {boolean} True si cumple la condición, false si no.
+         */
+        function frobeniusValido(generadores, F) {
+            return (!esRepresentable(F, generadores)) && esRepresentable(F + 1, generadores);
+        }
+
+        /**
+         * @function semigrupoInicial
+         * @description Genera el semigrupo inicial con Frobenius F.
+         * @param {number} F - Número de Frobenius.
+         * @returns {number[]} Lista de generadores inicial.
+         */
+        function semigrupoInicial(F) {
+            let generadores = [];
+            for (let i = F + 1; i <= 2 * F + 1; i++) {
+                generadores.push(i);
+            }
+            return generadores;
+        }
+
+        /**
+         * @function obtenerCandidatos
+         * @description Obtiene generadores candidatos que mantienen el Frobenius fijo al agregarse.
+         * @param {number[]} S - Semigrupo actual.
+         * @param {number} F - Frobenius dado.
+         * @returns {{valor: number, semigrupo: number[]}[]} Lista de candidatos con nuevo semigrupo.
+         */
+        function obtenerCandidatos(S, F) {
+            let candidatos = [];
+            let m = S.length === 0 ? F + 1 : S[0];
+            for (let x = 2; x < m; x++) {
+                if (x === F) continue;
+                if (!S.includes(x)) {
+                    let T = S.slice();
+                    T.push(x);
+                    T = minimizarGeneradores(T);
+                    if (frobeniusValido(T, F)) {
+                        candidatos.push({ valor: x, semigrupo: T });
+                    }
+                }
+            }
+            return candidatos;
+        }
+
+        /**
+         * @function conjuntoApery
+         * @description Calcula el conjunto de Apéry de un semigrupo con respecto al periodo.
+         * @param {number[]} generadores - Lista de generadores.
+         * @param {number} periodo - Módulo con respecto al cual se calcula Apéry.
+         * @returns {number[]} Conjunto de Apéry ordenado.
+         */
+        function conjuntoApery(generadores, periodo) {
+            let limite = 2 * periodo * periodo;
+            let dp = new Array(limite + 1).fill(false);
+            dp[0] = true;
+            for (let i = 0; i <= limite; i++) {
+                if (!dp[i]) continue;
+                for (let g of generadores) {
+                    let siguiente = i + g;
+                    if (siguiente <= limite) {
+                        dp[siguiente] = true;
+                    }
+                }
+            }
+            let ap = [];
+            for (let r = 0; r < periodo; r++) {
+                let candidato = -1;
+                for (let v = 0; v <= limite; v++) {
+                    if (dp[v] && v % periodo === r) {
+                        candidato = v;
+                        break;
+                    }
+                }
+                if (candidato >= 0) {
+                    ap.push(candidato);
+                }
+            }
+            ap.sort((a, b) => a - b);
+            return ap;
+        }
+
+        /**
+         * @function aperyAString
+         * @description Convierte un conjunto de Apéry en una cadena.
+         * @param {number[]} generadores - Generadores del semigrupo.
+         * @param {number} periodo - Periodo de Apéry.
+         * @returns {string} Cadena con el formato Ap(<a,b,...>, p) = {...}
+         */
+        function aperyAString(generadores, periodo) {
+            let ap = conjuntoApery(generadores, periodo);
+            let resultado = "Ap(" + corchetesAngulares(generadores) + ", " + periodo + ") = {";
+            resultado += ap.join(",");
+            resultado += "}";
+            return resultado;
+        }
+
+        /**
+         * @function yaVisto
+         * @description Verifica si un semigrupo ya ha sido procesado.
+         * @param {number[]} S - Semigrupo.
+         * @param {Set<string>} vistos - Conjunto de semigrupos vistos en formato string.
+         * @returns {boolean} True si ya fue procesado.
+         */
+        function yaVisto(S, vistos) {
+            return vistos.has(semigrupoAString(S));
+        }
+
+        /**
+         * @function generaSemigruposConF
+         * @description Genera todos los semigrupos con número de Frobenius F usando expansión descendente.
+         * @param {number} F - Número de Frobenius fijo.
+         * @param {function} Fila - Función callback para procesar cada semigrupo y su conjunto de Apéry.
+         * @returns {number[][]} Lista de todos los semigrupos generados.
+         */
+        function generaSemigruposConF(F, Fila) {
+            let vistos = new Set();
+            let resultado = [];
+
+            let S0 = semigrupoInicial(F);
+            S0 = minimizarGeneradores(S0);
+            resultado.push(S0);
+            vistos.add(semigrupoAString(S0));
+
+            if (Fila) {
+                Fila(semigrupoAString(S0), aperyAString(S0, F + 1));
+            }
+
+            let nivelActual = [S0];
+
+            while (nivelActual.length > 0) {
+                let siguienteNivel = [];
+                for (let S of nivelActual) {
+                    let cands = obtenerCandidatos(S, F);
+                    for (let c of cands) {
+                        if (!yaVisto(c.semigrupo, vistos)) {
+                            vistos.add(semigrupoAString(c.semigrupo));
+                            resultado.push(c.semigrupo);
+                            siguienteNivel.push(c.semigrupo);
+                            if (Fila) {
+                                Fila(semigrupoAString(c.semigrupo), aperyAString(c.semigrupo, F + 1));
+                            }
+                        }
+                    }
+                }
+                nivelActual = siguienteNivel;
+            }
+            return resultado;
+        }
+
+        /**
+         * @function calcular
+         * @description Ejecuta el cálculo de semigrupos con Frobenius F y clasifica en internos y hojas. Finalmente, se muestran los resultados.
+         */
+        function calcular() {
+            limpiarSalida();
+
+            let valorEntrada = document.getElementById("inputNumeros").value.trim();
+
+            if (!/^\d+$/.test(valorEntrada) || valorEntrada == 0) {
+                document.getElementById("frobFijo").textContent =
+                    "Por favor, introduce un único número entero mayor a 0.";
+                return;
+            }
+
+            let F = parseInt(valorEntrada, 10);
+            if (F < 0) {
+                document.getElementById("frobFijo").textContent = "F debe ser un entero mayor o igual a 0.";
+                return;
+            }
+
+            let tiempoInicio = performance.now();
+            let contenedorResultados = document.getElementById("frobFijo");
+
+            let tablaResultados = document.createElement("table");
+            tablaResultados.setAttribute("id", "tablaResultados");
+
+            let filaCabecera = document.createElement("tr");
+            let thSemigrupo = document.createElement("th");
+            thSemigrupo.textContent = "Semigrupo";
+            let thApery = document.createElement("th");
+            thApery.textContent = "Conjunto Apéry";
+            filaCabecera.appendChild(thSemigrupo);
+            filaCabecera.appendChild(thApery);
+            tablaResultados.appendChild(filaCabecera);
+
+            function agregarFila(semigrupoStr, aperyStr) {
+                let fila = document.createElement("tr");
+                let td1 = document.createElement("td");
+                td1.textContent = semigrupoStr;
+                let td2 = document.createElement("td");
+                td2.textContent = aperyStr;
+                fila.appendChild(td1);
+                fila.appendChild(td2);
+                tablaResultados.appendChild(fila);
+            }
+
+            //Se generan los semigrupos
+            let todos = generaSemigruposConF(F, agregarFila);
+            contenedorResultados.appendChild(tablaResultados);
+
+            //Se clasifican en hojas o internos
+            let internos = [], hojas = [];
+            for (let S of todos) {
+                let todosMenores = S.every(g => g < F);
+                if (todosMenores) hojas.push(S);
+                else internos.push(S);
+            }
+
+            //Se crea sección de clasificación
+            let divClasificacion = document.createElement("div");
+            divClasificacion.classList.add("result-section");
+
+            //Internos
+            let bloqueInternos = document.createElement("div");
+            bloqueInternos.classList.add("bloque");
+            let encabezadoInt = document.createElement("h3");
+            encabezadoInt.textContent = "Semigrupos internos:";
+            bloqueInternos.appendChild(encabezadoInt);
+            let tablaInt = document.createElement("table");
+            tablaInt.setAttribute("id", "tablaInternos");
+            let filaIntCab = document.createElement("tr");
+            let thInt = document.createElement("th");
+            thInt.textContent = "Semigrupo";
+            filaIntCab.appendChild(thInt);
+            tablaInt.appendChild(filaIntCab);
+            if (internos.length) {
+                internos.forEach(S => {
+                    let fila = document.createElement("tr");
+                    let td = document.createElement("td");
+                    td.textContent = semigrupoAString(S);
+                    fila.appendChild(td);
+                    tablaInt.appendChild(fila);
+                });
+            } else {
+                let fila = document.createElement("tr");
+                let td = document.createElement("td");
+                td.textContent = "Ningún semigrupo interno encontrado.";
+                fila.appendChild(td);
+                tablaInt.appendChild(fila);
+            }
+            bloqueInternos.appendChild(tablaInt);
+            divClasificacion.appendChild(bloqueInternos);
+
+            //Hojas
+            let bloqueHojas = document.createElement("div");
+            bloqueHojas.classList.add("bloque");
+            let encabezadoHojas = document.createElement("h3");
+            encabezadoHojas.textContent = "Semigrupos hoja:";
+            bloqueHojas.appendChild(encabezadoHojas);
+            let tablaHojas = document.createElement("table");
+            tablaHojas.setAttribute("id", "tablaHojas");
+            let filaHojasCab = document.createElement("tr");
+            let thH = document.createElement("th");
+            thH.textContent = "Semigrupo";
+            filaHojasCab.appendChild(thH);
+            tablaHojas.appendChild(filaHojasCab);
+            if (hojas.length) {
+                hojas.forEach(S => {
+                    let fila = document.createElement("tr");
+                    let td = document.createElement("td");
+                    td.textContent = semigrupoAString(S);
+                    fila.appendChild(td);
+                    tablaHojas.appendChild(fila);
+                });
+            } else {
+                let fila = document.createElement("tr");
+                let td = document.createElement("td");
+                td.textContent = "Ningún semigrupo hoja encontrado.";
+                fila.appendChild(td);
+                tablaHojas.appendChild(fila);
+            }
+            bloqueHojas.appendChild(tablaHojas);
+            divClasificacion.appendChild(bloqueHojas);
+
+            //Totales
+            let resumenTotales = document.createElement("p");
+            resumenTotales.textContent = "Total internos: " + internos.length +
+                "   Total hojas: " + hojas.length;
+            resumenTotales.classList.add("totals");
+            divClasificacion.appendChild(resumenTotales);
+
+            contenedorResultados.appendChild(divClasificacion);
+
+            let tiempoFin = performance.now();
+            let transcurrido = (tiempoFin - tiempoInicio).toFixed(2);
+            document.getElementById("tiempoCalculo").textContent = transcurrido + " ms";
+        }
+
+        /**
+         * @function vaciarResultados
+         * @description Vacía el campo de entrada y la salida HTML.
+         */
+        function vaciarResultados() {
+            limpiarSalida();
+            document.getElementById("inputNumeros").value = "";
+        }
+    </script>
+    <script>
+        /**
+         * @function ejemplos
+         * @description Muestra u oculta la sección de ejemplos.
+         */
+        function ejemplos() {
+            var ejemplosDiv = document.getElementById("ejemplo");
+            if (ejemplosDiv.style.display === "none") {
+                ejemplosDiv.style.display = "block";
+            } else {
+                ejemplosDiv.style.display = "none";
+            }
+        }
+    </script>
+    <script>
+        /**
+         * @function propiedades
+         * @description Muestra u oculta la sección de propiedades.
+         */
+        function propiedades() {
+            var propiedadesDiv = document.getElementById("propiedades");
+            if (propiedadesDiv.style.display === "none") {
+                propiedadesDiv.style.display = "block";
+            } else {
+                propiedadesDiv.style.display = "none";
+            }
+        }
+    </script>
+    <script>
+        /**
+         * @function utilidades
+         * @description Muestra u oculta la sección de utilidades.
+         */
+        function utilidades() {
+            var utilidadesDiv = document.getElementById("utilidades");
+            if (utilidadesDiv.style.display === "none") {
+                utilidadesDiv.style.display = "block";
+            } else {
+                utilidadesDiv.style.display = "none";
+            }
+        }
+    </script>
+</head>
+
+<body>
+    <header>
+        <img id="logo" src="imagenes/logo.png" alt="logo de la pagina del tfg" width="50" height="50">
+
+        <h1 id="SN_principal">SEMIGRUPOS NUMÉRICOS</h1>
+
+        <ul>
+            <li><a href="index.html">Inicio</a></li>
+            <li><a href="visionmatematica.html">Visión matemática</a></li>
+            <li><a href="visioninformatica.html">Visión informática</a></li>
+            <li><a href="utilidades.html">Utilidades</a></li>
+            <li><a href="informacion.html">Información</a></li>
+            <li><a href="experiencias.html">Experiencias</a></li>
+        </ul>
+
+    </header>
+    <main>
+        <section>
+            <nav class="sidebar">
+                <ul>
+                    <li><a href="automatas.html">Automatas</a></li>
+                    <li><a href="seguridad.html">Seguridad</a></li>
+                    <li><a href="mochila.html">Mochila</a></li>
+                    <li><a href="generoFijo.html">Género Fijo</a></li>
+                    <li><a href="numeroFrobFijo.html">Número Frobenius Fijo</a></li>
+                    <li><a href="generoMulti.html">Género y Multiplicidad Fijos</a></li>
+                </ul>
+            </nav>
+        </section>
+
+        <section id="sH">
+            <h2 id="SH">SEMIGRUPOS NUMÉRICOS CON NÚMERO DE FROBENIUS FIJO</h2>
+            <p>
+                Dado un entero positivo <strong>F</strong>, se define un semigrupo numérico con
+                número de Frobenius fijo como el conjunto formado por todas las
+                combinaciones
+                lineales no negativas de un conjunto mínimo de generadores, que cumplen la propiedad de que
+                <strong>F</strong> es el
+                mayor número no representable y que, a partir de <strong>F+1</strong>, todos los enteros son
+                alcanzables. Utilizando
+                un algoritmo que parte del semigrupo inicial
+                S₀ = {F+1, F+2, …, 2F+1} y que minimiza los conjuntos de generadores, se
+                exploran
+                sistemáticamente las diversas configuraciones que mantienen esta propiedad esencial.
+            </p>
+            <p id="text">
+                Los <strong>semigrupos numéricos internos</strong> son aquellos cuya estructura es tan robusta que
+                ningún generador
+                puede eliminarse sin alterar la condición fundamental del número de Frobenius. En estos semigrupos, cada
+                elemento
+                generador es indispensable para garantizar que <strong>F</strong> siga siendo el mayor entero no
+                representable, lo
+                que permite identificar configuraciones ordenadas y estrictamente definidas.
+            </p>
+            <p id="text">
+                Por otro lado, los <strong>semigrupos numéricos hoja</strong> se caracterizan por presentar una
+                estructura en la que
+                la eliminación de uno o varios generadores altera la representabilidad de los números, manteniendo aún
+                la condición
+                de Frobenius fijo pero en un contexto más disperso. Estos semigrupos ofrecen una perspectiva sobre casos
+                extremos y
+                configuraciones complejas, resultando esenciales para comprender la diversidad en la formación de
+                semigrupos con un
+                número de Frobenius preestablecido.
+            </p>
+            <button onclick="propiedades()">Propiedades</button>
+            <div id="propiedades" style="display: none;">
+                <p id="text">
+                    <span class="punto"></span><strong>Determinación única del número de Frobenius:</strong> cada
+                    semigrupo numérico
+                    generado con este programa posee un número de Frobenius fijo, es decir, un valor único que
+                    representa el mayor
+                    entero no representable. Esto garantiza que, a partir de dicho número, en concreto F+1 (el
+                    conductor), todos los
+                    enteros son alcanzables mediante combinaciones lineales de los generadores.
+                </p>
+                <p id="text">
+                    <span class="punto"></span><strong>Presencia de un conductor:</strong> la estructura del semigrupo
+                    se define
+                    claramente por la existencia de un conductor (F+1), que marca el punto a partir del cual toda la
+                    suma de los
+                    generadores permite obtener cualquier valor entero. Esta característica destaca la densidad e
+                    integridad de la
+                    estructura del semigrupo.
+                </p>
+                <p id="text">
+                    <span class="punto"></span><strong>Minimización de generadores:</strong> el algoritmo elimina
+                    redundancias en el
+                    conjunto de generadores, manteniendo únicamente aquellos elementos esenciales que aseguran la
+                    propiedad de tener
+                    un número de Frobenius fijo. Con ello se optimiza la composición del semigrupo, enfatizando la
+                    importancia de
+                    cada generador.
+                </p>
+                <p id="text">
+                    <span class="punto"></span><strong>Aplicación en problemas de clasificación:</strong> la generación
+                    y análisis
+                    de semigrupos numéricos con número de Frobenius predefinido permite abordar y clasificar problemas
+                    complejos en
+                    teoría de números y combinatoria, estableciendo conexiones relevantes con otras estructuras
+                    algebraicas y
+                    ofreciendo un marco para explorar configuraciones matemáticas diversas.
+                </p>
+            </div>
+            <button onclick="ejemplos()">Ejemplos</button>
+            <div id="ejemplo" style="display: none;">
+                <p id="text">
+                    <strong>Ejemplo 1 (Número de Frobenius 1):</strong> si el número de Frobenius fijo es <span
+                        class="form-peque">\(1\)</span>,
+                    el único semigrupo interno que
+                    hay es
+                    <span class="form-peque">\( \langle2,3\rangle \)</span>. En este caso, el único hueco es <span
+                        class="form-peque">\(1\)</span> (el cual es el propio número de Frobenius) y, a partir de <span
+                        class="form-peque">\(2\)</span>, todas las
+                    combinaciones
+                    lineales
+                    no negativas forman el semigrupo numérico.
+                </p>
+                <p id="text">
+                    <strong>Ejemplo 2 (Número de Frobenius 2):</strong> para número de Frobenius fijo <span
+                        class="form-peque">\(2\)</span>, el único
+                    semigrupo numérico interno es
+                    <span class="form-peque">\( \langle3,4,5\rangle \)</span>. Aquí, a partir del 3 en adelante se
+                    pueden generar todas las combinaciones posibles a partir de dichos generedores.
+                </p>
+                <p id="text">
+                    <strong>Ejemplo 3 (Número de Frobenius 3):</strong> si el número de Frobenius fijo es <span
+                        class="form-peque">\(3\)</span>,
+                    un semigrupo numérico es
+                    <span class="form-peque">\( \langle2,5\rangle \)</span>. A partir del número de Frobenius, se pueden
+                    generar el resto de combinaciones lineales a partir de los generadores del semigrupo numérico, lo
+                    cual se cumple.
+                </p>
+                <p id="text">
+                    <strong>Ejemplo 4 (Número de Frobenius 7):</strong> un semigrupo hoja para número de Frobenius fijo
+                    <span class="form-peque">\(7\)</span> es
+                    <span class="form-peque">\( \langle4,5,6\rangle \)</span>. En este caso, con ese conjunto de
+                    generadores bajo ninguna combinación lineal se puede generar el número de Frobenius fijo, luego como
+                    este es el mayor de los no generados y al presentar todos los elementos del conjunto de generadores
+                    menores al número de Frobenius, se considera hoja.
+                </p>
+                <p id="text">
+                    <strong>Ejemplo 5 (Número de Frobenius 11):</strong> para número de Frobenius fijo <span
+                        class="form-peque">\(11\)</span>, se
+                    puede considerar el semigrupo númerico hoja
+                    <span class="form-peque">\( \langle5,7,8,9\rangle \)</span>. Aquí, tras calcular las combinaciones
+                    lineales se
+                    se pueden observar que el mayor hueco no generable es
+                    <span class="form-peque">\(\{11\}\)</span>, el cual es el número de Frobenius fijo dado y, al ser
+                    mayor que todos los elementos del conjunto de generadores, se considera este semigrupo numérico como
+                    hoja.
+                </p>
+            </div>
+            <button onclick="utilidades()">Utilidades</button>
+            <div id="utilidades" style="display: none;">
+                <p id="text">
+                    <span class="punto"></span><strong>Optimización de algoritmos y recursos:</strong>
+                    el programa permite identificar y clasificar semigrupos numéricos con número de Frobenius fijo, lo
+                    que facilita
+                    la construcción de algoritmos eficientes que aprovechan la estructura única de estos semigrupos.
+                    Esta precisión
+                    en la determinación del número de Frobenius ayuda a optimizar recursos en problemas complejos en
+                    áreas como la
+                    investigación operativa y la optimización computacional.
+                </p>
+                <p id="text">
+                    <span class="punto"></span><strong>Aplicaciones matemáticas avanzadas:</strong>
+                    el programa creado lo convertimos en un recurso didáctico para comprender conceptos fundamentales de
+                    la
+                    teoría de
+                    números y combinaciones lineales, al enfocar la atención en semigrupos con un valor único de
+                    Frobenius. Esto
+                    apoya la enseñanza de programación dinámica, métodos de optimización y técnicas de análisis
+                    algebraico.
+                </p>
+                <p id="text">
+                    <span class="punto"></span><strong>Modelado y simulación en logística:</strong>
+                    al representar restricciones numéricas específicas y combinatorias, el programa desarrollado es útil
+                    para modelar
+                    escenarios
+                    logísticos reales, como la organización de inventarios o el empaquetado óptimo. La capacidad de
+                    calcular un
+                    número de Frobenius fijo permite simular escenarios complejos y optimizar procesos en contextos
+                    prácticos.
+                </p>
+                <p id="text">
+                    <span class="punto"></span><strong>Análisis en informática y teoría de números:</strong>
+                    fomenta la investigación en áreas como la optimización combinatoria, el diseño de
+                    algoritmos y la
+                    teoría de grafos, integrando conceptos algebraicos con aplicaciones computacionales. El estudio de
+                    semigrupos
+                    numéricos con número de Frobenius fijo ofrece un marco robusto para analizar estructuras complejas y
+                    resolver
+                    problemas en teoría de números.
+                </p>
+            </div>
+        </section>
+
+        <section id="sH">
+            <h2>Semigrupos numéricos de número de frobenius fijo</h2>
+            <label for="inputNumeros">Introduce el número de Frobenius:</label>
+            <input type="number" id="inputNumeros" min="1" placeholder="Ej. 10">
+            <button onclick="calcular()">Calcular</button>
+            <button onclick="vaciarResultados()">Vaciar</button>
+        </section>
+
+        <section id="sH">
+            <h2>Semigrupos numéricos que haya con ese número de Frobenius:</h2>
+            <div id="frobFijo"></div>
+            <h3>Tiempo de cálculo:</h3>
+            <div id="tiempoCalculo"></div>
+        </section>
+    </main>
+
+    <footer id="f1"><a id="e1" href="documentocontacto.html">Documento de
+            contacto</a>---------------------------------------------------------------------
+        <a id="e1" href="documentacion.pdf">documentacion.pdf</a>
+    </footer>
+</body>
+
+</html>

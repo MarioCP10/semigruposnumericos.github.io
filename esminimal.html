@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Minimal</title>
+    <link rel="stylesheet" type="text/css" href="esminimal.css" />
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script type="text/javascript" id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+        </script>
+    <script>
+        /**
+         * @function mcd
+         * @description Calcula el máximo común divisor (MCD) de dos números usando Euclides.
+         * @param {number} a – Primer operando (mayor o igual a 0)
+         * @param {number} b – Segundo operando (mayor o igual a 0)
+         * @returns {number} – El MCD de a y b.
+         */
+        function mcd(a, b) {
+            while (b !== 0) {
+                let temp = b;
+                b = a % b;
+                a = temp;
+            }
+            return a;
+        }
+
+        /**
+         * @function reducemcd
+         * @description Calcula el MCD de todos los elementos de un array.
+         * @param {number[]} arr – Array de enteros positivos.
+         * @returns {number} – MCD de todos los elementos.
+         */
+        function reducemcd(arr) {
+            return arr.reduce((a, b) => mcd(a, b));
+        }
+
+        /**
+         * @function formaExpandida
+         * @description Genera todos los enteros alcanzables hasta un límite (que es numTerminos·min(S)).
+         * @param {number[]} S – Conjunto de generadores.
+         * @param {number} [numTerminos=1000] – Factor para definir el límite de expansión.
+         * @returns {number[]} – Array ordenado de todos los términos alcanzables ≤ límite.
+         */
+        function formaExpandida(S, numTerminos = 1000) {
+            let terminos = new Set([0]);
+            let cola = [0];
+            let minS = Math.min(...S);
+            let limite = numTerminos * minS;
+
+            while (cola.length) {
+                let t = cola.shift();
+                for (let a of S) {
+                    let nuevoTermino = t + a;
+                    if (nuevoTermino <= limite && !terminos.has(nuevoTermino)) {
+                        terminos.add(nuevoTermino);
+                        cola.push(nuevoTermino);
+                    }
+                }
+            }
+
+            return [...terminos].sort((a, b) => a - b);
+        }
+
+        /**
+         * @function esMinimal
+         * @description Determina si el conjuntode generadores de S es minimal o devuelve el subconjunto minimal.
+         * @param {number[]} S – Conjunto de generadores (mcd=1).
+         * @returns {true|number[]} – true si S ya es minimal; 
+         *                           o array con generadores mínimos si hay redundancias.
+         * @details
+         *   1. Comprueba bloque de min(S) consecutivos en forma expandida.
+         *   2. Marca generadores ausentes en dicho bloque.
+         *   3. Para cada g∈S, elimina g y expande; si g aparece, es redundante.
+         */
+        function esMinimal(S) {
+            if (S.length === 1 && S[0] === 1) return true;
+
+            let elementosEliminar = new Set();
+            let minS = Math.min(...S);
+            let hilbertExpandida = formaExpandida(S, 10 * minS);
+
+            let consecutivos = 0;
+            for (let i = 0, prev = -1; i < hilbertExpandida.length; i++) {
+                if (hilbertExpandida[i] !== prev + 1) {
+                    consecutivos = 1;
+                } else {
+                    consecutivos++;
+                    if (consecutivos >= minS) break;
+                }
+                prev = hilbertExpandida[i];
+            }
+
+            if (consecutivos >= minS) {
+                for (let num of S) {
+                    if (!hilbertExpandida.includes(num)) {
+                        elementosEliminar.add(num);
+                    }
+                }
+            }
+
+            for (let num of S) {
+                let subConjunto = S.filter(x => x !== num);
+                let expandida = formaExpandida(subConjunto, num + 1);
+                if (expandida.includes(num)) {
+                    elementosEliminar.add(num);
+                }
+            }
+
+            return elementosEliminar.size ? S.filter(num => !elementosEliminar.has(num)) : true;
+        }
+
+        /**
+         * @function calcular
+         * @description Lee la entrada, valida semigrupo y muestra resultado de minimalidad.
+         */
+        function calcular() {
+            const inputNumeros = document.getElementById("inputNumeros").value;
+            const partes = inputNumeros.split(",").map(num => num.trim());
+
+            const numeros = inputNumeros
+                .split(",")
+                .map(num => Number(num.trim()))
+                .filter(num => !isNaN(num));
+            const resultadoMinimal = document.getElementById("resultadoMinimal");
+
+            for (let p of partes) {
+                if (!/^\d+$/.test(p) || parseInt(p, 10) === 0) {
+                    alert("Solo se permiten números enteros positivos (el 0 ya se incluye por defecto).");
+                    vaciarResultados();
+                    return;
+                }
+            }
+
+            //Se debe de comprobar que cumple el criterio de semigrupo numérico
+            if (reducemcd(numeros) !== 1) {
+                alert("El conjunto de números que has metido no es un semigrupo numérico.");
+                vaciarResultados();
+                return;
+            }
+
+            const resultado = esMinimal(numeros);
+            if (resultado === true) {
+                resultadoMinimal.textContent = "Los generadores del semigrupo son minimal.";
+            } else {
+                resultadoMinimal.textContent = `Los generadores del semigrupo no son minimal. Deberían ser: ${resultado.join(", ")}`;
+            }
+        }
+
+        /**
+         * @function vaciarResultados
+         * @description Limpia el resultado y el campo de entrada.
+         */
+        function vaciarResultados() {
+            document.getElementById("inputNumeros").value = "";
+            document.getElementById("resultadoMinimal").textContent = "";
+        }
+    </script>
+    <script>
+        /**
+         * @function ejemplos
+         * @description Muestra u oculta la sección de ejemplos.
+         */
+        function ejemplos() {
+            var ejemplosDiv = document.getElementById("ejemplo");
+            if (ejemplosDiv.style.display === "none") {
+                ejemplosDiv.style.display = "block";
+            } else {
+                ejemplosDiv.style.display = "none";
+            }
+        }
+    </script>
+    <script>
+        /**
+         * @function propiedades
+         * @description Muestra u oculta la sección de propiedades.
+         */
+        function propiedades() {
+            var propiedadesDiv = document.getElementById("propiedades");
+            if (propiedadesDiv.style.display === "none") {
+                propiedadesDiv.style.display = "block";
+            } else {
+                propiedadesDiv.style.display = "none";
+            }
+        }
+    </script>
+    <script>
+        /**
+         * @function utilidades
+         * @description Muestra u oculta la sección de utilidades.
+         */
+        function utilidades() {
+            var utilidadesDiv = document.getElementById("utilidades");
+            if (utilidadesDiv.style.display === "none") {
+                utilidadesDiv.style.display = "block";
+            } else {
+                utilidadesDiv.style.display = "none";
+            }
+        }
+    </script>
+</head>
+
+<body>
+    <header>
+        <img id="logo" src="imagenes/logo.png" alt="logo de la pagina del tfg" width="50" height="50">
+
+        <h1 id="SN_principal">SEMIGRUPOS NUMÉRICOS</h1>
+
+        <ul>
+            <li><a href="index.html">Inicio</a></li>
+            <li><a href="visionmatematica.html">Visión matemática</a></li>
+            <li><a href="visioninformatica.html">Visión informática</a></li>
+            <li><a href="utilidades.html">Utilidades</a></li>
+            <li><a href="informacion.html">Información</a></li>
+            <li><a href="experiencias.html">Experiencias</a></li>
+        </ul>
+
+    </header>
+    <main>
+        <section>
+            <nav class="sidebar">
+                <ul>
+                    <li><a href="nFrobenius.html">Número de Frobenius</a></li>
+                    <li><a href="genero.html">Género</a></li>
+                    <li><a href="conductor.html">Conductor</a></li>
+                    <li><a href="serieHilbert.html">Serie de Hilbert</a></li>
+                    <li><a href="esminimal.html">Sistema Minimal</a></li>
+                    <li><a href="conjuntosApery.html">Conjuntos de Apéry</a></li>
+                    <li><a href="sistemaInfinito.html">Sistema Minimal Infinito</a></li>
+                </ul>
+            </nav>
+        </section>
+
+        <section id="sH">
+            <h2 id="SH">SISTEMA MINIMAL DE GENERADORES</h2>
+            <p>Un sistema minimal de generadores dentro de un semigrupo numérico es un subconjunto especial de
+                generadores que
+                caracteriza al
+                semigrupo de la forma más eficiente posible.</p>
+            <p><strong>Generadores y base minimal</strong></p>
+            <p>Dado un semigrupo numérico <strong>S</strong>,
+                existe un conjunto finito de elementos {n<sub>1</sub>, n<sub>2</sub>, ..., n<sub>k</sub>} ⊆
+                <strong>S</strong> tal que:
+            </p>
+            <p>$$ S = \langle n_1, n_2, \ldots, n_k \rangle = \{a_1 n_1 + a_2 n_2 + \cdots + a_k n_k \mid a_i \in
+                \mathbb{N}\} $$</p>
+            <button onclick="propiedades()">Propiedades</button>
+            <div id="propiedades" style="display: none;">
+                <p id="text"><span class="punto"></span><strong>Unicidad relativa:</strong> todo semigrupo numérico
+                    tiene un único sistema minimal de generadores.
+                </p>
+                <p id="text"><span class="punto"></span><strong>Crecimiento y estructura:</strong> la cantidad de
+                    generadores en un sistema minimal de generadores depende de la estructura del semigrupo. Para
+                    semigrupos con pocos
+                    huecos en los naturales, los sistemas minimales suelen ser pequeños.
+                </p>
+                <p id="text"><span class="punto"></span><strong>Condiciones para minimalidad:</strong> un conjunto
+                    <span class="form-peque">\(\{n_1, n_2, \ldots, n_k\}\)</span> es minimal si y sólo si ninguno de los
+                    <span class="form-peque">\(n_i\)</span> se puede escribir como
+                    combinación
+                    lineal
+                    no negativa de los demás.
+                </p>
+                <p id="text"><span class="punto"></span><strong>Sistemas minimales para semigrupos simples:</strong>
+                    Para conjuntos que son de 2 elementos, podemos hacer uso del número de Frobenius para comprobar si
+                    el sistema es minimal
+                    o no. El sistema minimal de generadores está determinado por el número de Frobenius.
+                </p>
+            </div>
+            <button onclick="ejemplos()">Ejemplos</button>
+            <div id="ejemplo" style="display: none;">
+                <p id="text"><strong>Ejemplo:</strong> Consideramos el semigrupo numérico generado por <span
+                        class="form-peque">\(A =
+                        \{3,5,7\}\)</span>. Este conjunto genera el semigrupo de los números que pueden escribirse como
+                    combinación de estos tres generadores con
+                    coeficientes naturales. Tenemos que comprobar que ningún elemento de estos pueda generar a otro de
+                    los elementos del
+                    semigrupo. Los números 3, 5 y 7 son números primos, pudiendo observar que no hay ninguna combinación
+                    posible de que se
+                    genere ningún elemento de los que hay en el semigrupo, por lo que el semigrupo numérico presenta un
+                    sistema minimal de generadores.
+                </p>
+                <p id="text"><strong>Ejemplo:</strong> Consideremos el semigrupo numérico generado por <span
+                        class="form-peque">\( A =
+                        \{5,8,9\} \)</span>.
+                    Este conjunto genera el semigrupo de los números que pueden escribirse como combinación de estos
+                    tres generadores con
+                    coeficientes naturales. Tenemos que comprobar si hay alguna combinación de estos elementos que pueda
+                    generar algún
+                    elemento que pertenezca al semigrupo. Como se puede observar, no existe combinación alguna que pueda
+                    generar un elemento
+                    que se encuentre en el semigrupo, luego el semigrupo numérico presenta un
+                    sistema minimal de generadores.
+                </p>
+                <p id="text"><strong>Ejemplo:</strong> Consideremos el semigrupo numérico generado por <span
+                        class="form-peque">\( A =
+                        \{3,13,19\} \)</span>.
+                    Este conjunto genera el semigrupo de los números que pueden escribirse como combinación de estos
+                    tres generadores
+                    con coeficientes naturales. Tenemos que comprobar, dado que si hay alguna combinación de estos
+                    elementos que genere
+                    algún elemento perteneciente al semigrupo. Podemos observar que 13 + (3 &times; 2) = 19, por tanto
+                    existe un
+                    elemento que es
+                    del semigrupo que puede ser generado bajo combinaciones de otros elementos del semigrupo. En
+                    consecuencia, este
+                    semigrupo numérico no presenta un
+                    sistema minimal de generadores.
+                </p>
+                <p id="text"><strong>Ejemplo:</strong> Consideremos el semigrupo numérico generado por <span
+                        class="form-peque">\( A = \{4,7\} \)</span>.
+                    Podemos observar que ni el 4 ni el 7 se pueden generar bajo ninguna combinación de elementos del
+                    semigrupo. Luego este semigrupo numérico presenta un
+                    sistema minimal de generadores.
+                </p>
+            </div>
+            <button onclick="utilidades()">Utilidades</button>
+            <div id="utilidades" style="display: none;">
+                <p id="text"><span class="punto"></span><strong>Álgebra conmutativa: </strong>en teoría de anillos, los
+                    semigrupos numéricos aparecen en la descripción de anillos de valoraciones.
+                </p>
+                <p id="text"><span class="punto"></span><strong>Teoría de códigos: </strong>son muy importantes en la
+                    construcción de códigos correctores de errores.
+                </p>
+                <p id="text"><span class="punto"></span><strong>Geometría algebráica: </strong>se estudian en curvas
+                    singulares y en invariantes de singularidades.
+                </p>
+            </div>
+        </section>
+
+        <section id="sH">
+            <h2>Comprobación de sistemas de generadores minimales</h2>
+            <label for="inputNumeros">Introduce los elementos del semigrupo separados por comas (sin incluir el
+                0):</label>
+            <input type="text" id="inputNumeros" placeholder="Ej. 2,3" required>
+            <button onclick="calcular()">Calcular</button>
+            <button onclick="vaciarResultados()">Vaciar</button>
+        </section>
+
+        <section id="sH">
+            <p><strong>¿Es minimal?:</strong> <span id="resultadoMinimal"></span></p>
+            <p id="explicacionResultado"></p>
+        </section>
+
+    </main>
+
+    <footer id="f1"><a id="e1" href="documentocontacto.html">Documento de
+            contacto</a>---------------------------------------------------------------------
+        <a id="e1" href="documentacion.pdf">documentacion.pdf</a>
+    </footer>
+</body>
+
+</html>

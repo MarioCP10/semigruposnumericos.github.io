@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visión matemática</title>
+    <link rel="stylesheet" type="text/css" href="visionmatematica.css" />
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script type="text/javascript" id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+        </script>
+    <script>
+        /**
+         * @function conceptos
+         * @description Esta función muestra u oculta el contenido de conceptos y ajusta la posición del elemento con id "infinito".
+         */
+        function conceptos() {
+            var ejemploDiv = document.getElementById("conceptos");
+            var infinito = document.getElementById("infinito");
+
+            if (ejemploDiv.style.display === "none") {
+                ejemploDiv.style.display = "block";
+                infinito.style.top = "135%";
+            } else {
+                ejemploDiv.style.display = "none";
+                infinito.style.top = "85%";
+            }
+        }
+    </script>
+</head>
+
+<body>
+    <header>
+        <img id="logo" src="imagenes/logo.png" alt="logo de la pagina del tfg" width="50" height="50">
+        <h1 id="SN_principal">SEMIGRUPOS NUMÉRICOS</h1>
+        <ul>
+            <li><a href="index.html">Inicio</a></li>
+            <li><a href="visionmatematica.html">Visión matemática</a></li>
+            <li><a href="visioninformatica.html">Visión informática</a></li>
+            <li><a href="utilidades.html">Utilidades</a></li>
+            <li><a href="informacion.html">Información</a></li>
+            <li><a href="experiencias.html">Experiencias</a></li>
+        </ul>
+    </header>
+
+    <main>
+        <section>
+            <nav class="sidebar">
+                <ul>
+                    <li><a href="nFrobenius.html">Número de Frobenius</a></li>
+                    <li><a href="genero.html">Género</a></li>
+                    <li><a href="conductor.html">Conductor</a></li>
+                    <li><a href="serieHilbert.html">Serie de Hilbert</a></li>
+                    <li><a href="esminimal.html">Sistema Minimal</a></li>
+                    <li><a href="conjuntosApery.html">Conjuntos de Apéry</a></li>
+                    <li><a href="sistemaInfinito.html">Sistema Minimal Infinito</a></li>
+                </ul>
+            </nav>
+        </section>
+
+        <section id="sH">
+            <h2 id="SH">VISIÓN MATEMATICA</h2>
+            <p>Un semigrupo numérico es una estructura algebraica que surge a la hora de analizar los números
+                naturales.
+                Tienen
+                propiedades a tener en cuenta tanto en la teoría de números como en álgebra conmutativa. Lo podemos
+                definir como un
+                subconjunto <strong>S</strong> de los números naturales ℕ (normalmente se incluye el 0) el cual debe de
+                cumplir
+                fundamentalmente estas
+                dos propiedades:</p>
+            <p id="text"><span class="punto"></span><strong>Cerrado bajo la suma:
+                </strong> si a y b son elementos de <strong>S</strong>, entonces a + b también pertenece a
+                <strong>S</strong>.
+            </p>
+            <p id="text"><span class="punto"></span><strong>Con complemento finito en ℕ:
+                </strong> los números naturales que no pertenecen a <strong>S</strong> (llamados huecos) son solo un
+                conjunto finito, lo
+                que nos dice que a partir
+                de cierto número, todos los enteros mayores están en <strong>S</strong>.
+            </p>
+            <p id="text1">Esta última condición es lo mismo que decir que el máximo común divisor (MCD) de los
+                generadores de <strong>S</strong> sea 1, lo que
+                asegura que el semigrupo numérico cubra casi todos los números naturales a excepción de un conjunto
+                finito de ellos.
+            </p>
+            <p id="text1">Vemos en consecuencia que un semigrupo numérico debe de ser cerrado bajo la suma y debe de
+                cubrir casi todos los números
+                naturales, a excepción de sólo un número finito entre ellos. El mínimo de S (normalmente 0) y el
+                conductor (el menor
+                número a partir del cual todos los números naturales pertenecen a S) son conceptos que vamos a tener muy
+                presentes a lo largo del estudio de los semigrupos numéricos</p>
+            <button onclick="conceptos()">Conceptos</button>
+            <div id="conceptos" style="display: none;">
+                <p id="text"><span class="punto"></span><strong>Relación con ecuaciones diofánticas:</strong> los
+                    semigrupos numéricos
+                    se pueden interpretar como conjuntos de soluciones enteras no negativas de ecuaciones diofánticas
+                    lineales del tipo
+                    <span class="form-peque">\(a_1 x_1 + a_2 x_2 + \ldots + a_n x_n = b\)</span>, donde tenemos que los
+                    coeficientes \(a_i\) son enteros
+                    positivos y
+                    primos relativos entre sí.
+                </p>
+                <p id="text"><span class="punto"></span><strong>Monoides numéricos:
+                    </strong> como un semigrupo numérico es cerrado bajo la suma y contiene el 0, tiene la estructura de
+                    un monoide conmutativo, pero
+                    sin la necesidad de que existan los opuestos (es decir los negativos, ya que estos no se encuentran
+                    en el conjunto de
+                    los números naturales ℕ).
+                </p>
+                <p id="text"><span class="punto"></span><strong>Generadores:
+                    </strong>todo semigrupo numérico es finitamente generado. Existe un conjunto finito
+                    <strong>A</strong> ⊂ ℕ tal que
+                    cualquier elemento de <strong>S</strong> se
+                    puede escribir como una combinación de los elementos de <strong>A</strong> mediante una suma finita
+                    (se puede usar el
+                    mismo número varias
+                    veces para obtener un número concreto).
+                </p>
+                <p id="text"><span class="punto"></span><strong>Número de Frobenius y huecos:
+                    </strong>la condición de que ℕ \ S sea finito asegura que el semigrupo cubre casi todos los números
+                    naturales. El mayor de estos
+                    huecos se llama <u>número de Frobenius</u>, el cual es muy importante en los problemas de
+                    optimización y
+                    teoría de números dado
+                    que indica el mayor entero que no se puede expresar como la suma de elementos generadores del
+                    semigrupo. Además, la
+                    cantidad total de huecos se conoce como el <u>género</u> del semigrupo.
+                </p>
+                <p id="text"><span class="punto"></span><strong>Conjuntos de Apéry:
+                    </strong> son herramientas relevantes en el estudio y análisis de semigrupos numéricos, usadas para
+                    describir la estructura del
+                    semigrupo y calcular invariantes como el número de Frobenius.
+                </p>
+            </div>
+            <p id="text1">Como podemos observar, los semigrupos numéricos se pueden representar y analizar de varias
+                formas, mediante los sistemas
+                de generadores minimales, sus huecos, representaciones en términos de relaciones entre sus generadores o
+                los conjuntos
+                de Apéry. Estas herramientas nos permiten estudiar propiedades más avanzadas y encontrar aplicaciones en
+                aspectos del
+                álgebra y combinatoria.
+            </p>
+        </section>
+        <section>
+            <img id="num1" src="imagenes/pizarraMates.png" width="300" height="300">
+            <span id="infinito">&#8734;</span>
+            <img id="num2" src="imagenes/numerosEnCielo.png" width="300" height="300">
+        </section>
+    </main>
+
+    <footer id="f1"><a id="e1" href="documentocontacto.html">Documento de
+            contacto</a>---------------------------------------------------------------------
+        <a id="e1" href="documentacion.pdf">documentacion.pdf</a>
+    </footer>
+</body>
+
+</html>

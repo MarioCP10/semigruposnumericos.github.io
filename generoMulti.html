@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Género y multiplicidad fijos</title>
+    <link rel="stylesheet" type="text/css" href="generoMulti.css" />
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script type="text/javascript" id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+        </script>
+    <script>
+        let cacheGenero = {}, cacheFrobenius = {};
+        /**
+         * @function mcd
+         * @description Calcula el máximo común divisor (MCD) de dos números usando Euclides.
+         * @param {number} a – Primer operando (mayor o igual a 0)
+         * @param {number} b – Segundo operando (mayor o igual a 0)
+         * @returns {number} – El MCD de a y b.
+         */
+        function maxCD(a, b) {
+            while (b !== 0) {
+                const t = a % b;
+                a = b;
+                b = t;
+            }
+            return a;
+        }
+
+        /**
+         * @function clave
+         * @description Genera una clave única para un conjunto de números.
+         * @param {number[]} S - Conjunto de números.
+         * @returns {string} - Clave en forma de cadena.
+         */
+        function clave(S) {
+            return S.slice().sort((a, b) => a - b).join(',') + ',';
+        }
+
+        /**
+         * @function alcanzableYConductor
+         * @description Calcula los números alcanzables por combinaciones lineales y el conductor.
+         * @param {number[]} S - Conjunto generador del semigrupo.
+         * @returns {{alcanzable: boolean[], conductor: number}} - Array booleano de alcanzabilidad y conductor.
+         */
+        function alcanzableYConductor(S) {
+            const minS = Math.min(...S);
+            let maxVal = S.reduce((a, b) => a + b, 0), alcance;
+            while (true) {
+                alcance = Array(maxVal + 1).fill(false);
+                alcance[0] = true;
+                for (let s of S)
+                    for (let i = s; i <= maxVal; i++)
+                        if (alcance[i - s])
+                            alcance[i] = true;
+                let consec = 0;
+                for (let i = 0; i <= maxVal; i++) {
+                    consec = alcance[i] ? consec + 1 : 0;
+                    if (consec >= minS) return { alcanzable: alcance, conductor: i - minS + 1 };
+                }
+                maxVal *= 2;
+            }
+        }
+
+        /**
+         * @function calculaGenero
+         * @description Calcula el género de un semigrupo.
+         * @param {number[]} S - Conjunto generador del semigrupo.
+         * @returns {number} - El género del semigrupo.
+         */
+        function calculaGenero(S) {
+            const k = clave(S);
+            if (cacheGenero[k] != null)
+                return cacheGenero[k];
+            const { alcanzable, conductor } = alcanzableYConductor(S);
+            let gen = 0;
+            for (let i = 0; i < conductor; i++)
+                if (!alcanzable[i])
+                    gen++;
+            return cacheGenero[k] = gen;
+        }
+
+        /**
+         * @function calculaFrobenius
+         * @description Calcula el número de Frobenius del semigrupo.
+         * @param {number[]} S - Conjunto generador del semigrupo.
+         * @returns {number} - El mayor entero que no está en el semigrupo (número de Frobenius).
+         */
+        function calculaFrobenius(S) {
+            const k = clave(S);
+            if (cacheFrobenius[k] != null)
+                return cacheFrobenius[k];
+            const maxVal = S.reduce((a, b) => a + b, 0);
+            const alcance = Array(maxVal + 1).fill(false);
+            alcance[0] = true;
+            for (let s of S)
+                for (let i = s; i <= maxVal; i++)
+                    if (alcance[i - s])
+                        alcance[i] = true;
+            for (let i = maxVal; i >= 0; i--)
+                if (!alcance[i])
+                    return cacheFrobenius[k] = i;
+            return cacheFrobenius[k] = -1;
+        }
+
+        /**
+         * @function esMinimalHilbert
+         * @description Determina si un conjunto es una base minimal de Hilbert.
+         * @param {number[]} S - Conjunto generador.
+         * @returns {boolean} - True si es base minimal de Hilbert, false si no lo es.
+         */
+        function esMinimalHilbert(S) {
+            if (S.length === 1) return true;
+            const { alcanzable, conductor } = alcanzableYConductor(S);
+            const minS = Math.min(...S), lim = conductor + minS;
+            const H = new Set([0]), Q = [0];
+            while (Q.length) {
+                const t = Q.pop();
+                for (const a of S) {
+                    const n = t + a;
+                    if (n <= lim && !H.has(n)) {
+                        H.add(n);
+                        Q.push(n);
+                    }
+                }
+            }
+            for (let i = 0; i < S.length; i++) {
+                const C = S.slice(); C.splice(i, 1);
+                const F = new Set([0]), L = [0], lim2 = S[i] + 1;
+                while (L.length) {
+                    const t = L.pop();
+                    for (const a of C) {
+                        const n = t + a;
+                        if (n <= lim2 && !F.has(n)) {
+                            F.add(n);
+                            L.push(n);
+                        }
+                    }
+                }
+                if (F.has(S[i])) return false;
+            }
+            return true;
+        }
+
+        /**
+         * @function mcdEsUno
+         * @description Verifica si el MCD de un conjunto es 1 (semigrupo numérico).
+         * @param {number[]} S - Conjunto de números.
+         * @returns {boolean} - True si el MCD es 1, false en caso contrario.
+         */
+        function mcdEsUno(S) {
+            let g = S[0];
+            for (let i = 1; i < S.length; i++) {
+                g = maxCD(g, S[i]);
+                if (g === 1)
+                    return true;
+            }
+            return g === 1;
+        }
+
+        /**
+         * @function generaCombinaciones
+         * @description Genera todas las combinaciones de tamaño dado a partir de un conjunto.
+         * @param {number[]} nums - Conjunto de entrada.
+         * @param {number} tam - Tamaño de las combinaciones.
+         * @returns {number[][]} - Lista de combinaciones.
+         */
+        function generaCombinaciones(nums, tam) {
+            const res = [];
+            function bt(i, c) {
+                if (c.length === tam) {
+                    res.push([...c]);
+                    return;
+                }
+                for (let j = i; j < nums.length; j++) {
+                    c.push(nums[j]);
+                    bt(j + 1, c);
+                    c.pop();
+                }
+            }
+            bt(0, []);
+            return res;
+        }
+
+        /**
+         * @function encontrarSemigruposYHojas
+         * @description Encuentra todos los semigrupos numéricos internos y hojas con género y multiplicidad dados.
+         * @param {number} g - Género.
+         * @param {number} m - Multiplicidad.
+         * @returns {{internos: number[][], hojas: number[][]}} - Objetos con arrays de internos y hojas.
+         */
+        function encontrarSemigruposYHojas(g, m) {
+            const internos = [], hojas = [];
+            const nums = [];
+            for (let i = m; i <= g * 5; i++)
+                nums.push(i);
+            for (let tam = 2; tam <= g; tam++) {
+                for (const S of generaCombinaciones(nums, tam)) {
+                    if (Math.min(...S) !== m)
+                        continue;
+                    if (!mcdEsUno(S))
+                        continue;
+                    if (calculaGenero(S) !== g)
+                        continue;
+                    if (!esMinimalHilbert(S))
+                        continue;
+                    if (calculaFrobenius(S) > Math.max(...S))
+                        hojas.push(S);
+                    else
+                        internos.push(S);
+                }
+            }
+            if (m == g + 1) {
+                let semigrupoExtra = [];
+                for (let i = g + 1; i <= 2 * g + 1; i++) {
+                    semigrupoExtra.push(i);
+                }
+                internos.push(semigrupoExtra);
+            }
+            return { internos, hojas };
+        }
+
+        /**
+         * @function renderLaTeX
+         * @description Convierte una lista de conjuntos en formato LaTeX.
+         * @param {number[][]} arr - Lista de conjuntos generadores.
+         * @returns {string} - Cadena HTML con los conjuntos formateados en LaTeX.
+         */
+        function renderLaTeX(arr) {
+            if (arr.length === 0) return 'Ninguno';
+            return arr.map(s => `\\(\\langle ${s.join(',')} \\rangle\\)`).join(' ');
+        }
+
+        /**
+         * @function calcular
+         * @description Punto de entrada principal. Toma los valores de entrada, valida y genera resultados.
+         */
+        function calcular() {
+            cacheGenero = {};
+            cacheFrobenius = {};
+
+            //Se obtiene y limpia la entrada para genero
+            const generoInput = document.getElementById('generoInput').value.trim();
+
+            if (!/^\d+$/.test(generoInput)) {
+                alert("Por favor, introduce un único número entero para GÉNERO (mayor o igual a 0), sin decimales.");
+                vaciarResultados();
+                return;
+            }
+            const g = parseInt(generoInput, 10);
+
+            //Se obtiene y limpia la entrada para multiplicidad
+            const multiplicidadInput = document.getElementById('multiplicidadInput').value.trim();
+
+            if (!/^\d+$/.test(multiplicidadInput)) {
+                alert("Por favor, introduce un único número entero para MULTIPLICIDAD (mayor o igual a 1), sin decimales.");
+                vaciarResultados();
+                return;
+            }
+            const m = parseInt(multiplicidadInput, 10);
+
+            //Condicion mostrada por el pseudocodigo
+            if (g < 0 || m < 1 || g < m - 1) {
+                alert('Valores inválidos');
+                vaciarResultados();
+                return;
+            }
+
+            //Se usa un caso especial: si g es 0 y m es 1, se muestra la salida predeterminada.
+            if (g === 0 && m === 1) {
+                document.getElementById('resultadoArea').innerHTML = `$$\\langle 1 \\rangle$$`;
+                document.getElementById('comparacion').textContent = 'Único interno';
+                MathJax.typeset();
+                return;
+            }
+
+            const { internos, hojas } = encontrarSemigruposYHojas(g, m);
+            document.getElementById('resultadoArea').innerHTML =
+                '<h3>Semigrupos internos</h3>' + renderLaTeX(internos) +
+                '<h3>Semigrupos hoja</h3>' + renderLaTeX(hojas);
+            document.getElementById('comparacion').textContent =
+                internos.length > hojas.length ? 'Más internos' : internos.length < hojas.length ? 'Más hojas' : 'Iguales';
+
+            MathJax.typeset();
+        }
+
+        /**
+         * @function vaciarResultados
+         * @description Limpia todos los resultados y entradas del DOM.
+         */
+        function vaciarResultados() {
+            ['generoInput', 'multiplicidadInput'].forEach(id => document.getElementById(id).value = '');
+            document.getElementById('resultadoArea').innerHTML = '';
+            document.getElementById('comparacion').textContent = '';
+        }
+    </script>
+    <script>
+        /**
+         * @function ejemplos
+         * @description Muestra u oculta la sección de ejemplos.
+         */
+        function ejemplos() {
+            var ejemplosDiv = document.getElementById("ejemplo");
+            if (ejemplosDiv.style.display === "none") {
+                ejemplosDiv.style.display = "block";
+            } else {
+                ejemplosDiv.style.display = "none";
+            }
+        }
+    </script>
+    <script>
+        /**
+         * @function propiedades
+         * @description Muestra u oculta la sección de propiedades.
+         */
+        function propiedades() {
+            var propiedadesDiv = document.getElementById("propiedades");
+            if (propiedadesDiv.style.display === "none") {
+                propiedadesDiv.style.display = "block";
+            } else {
+                propiedadesDiv.style.display = "none";
+            }
+        }
+    </script>
+    <script>
+        /**
+         * @function utilidades
+         * @description Muestra u oculta la sección de utilidades.
+         */
+        function utilidades() {
+            var utilidadesDiv = document.getElementById("utilidades");
+            if (utilidadesDiv.style.display === "none") {
+                utilidadesDiv.style.display = "block";
+            } else {
+                utilidadesDiv.style.display = "none";
+            }
+        }
+    </script>
+</head>
+
+<body>
+    <header>
+        <img id="logo" src="imagenes/logo.png" alt="logo de la pagina del tfg" width="50" height="50">
+        <h1 id="SN_principal">SEMIGRUPOS NUMÉRICOS</h1>
+        <ul>
+            <li><a href="index.html">Inicio</a></li>
+            <li><a href="visionmatematica.html">Visión matemática</a></li>
+            <li><a href="visioninformatica.html">Visión informática</a></li>
+            <li><a href="utilidades.html">Utilidades</a></li>
+            <li><a href="informacion.html">Información</a></li>
+            <li><a href="experiencias.html">Experiencias</a></li>
+        </ul>
+    </header>
+
+    <main>
+        <section>
+            <nav class="sidebar">
+                <ul>
+                    <li><a href="automatas.html">Automatas</a></li>
+                    <li><a href="seguridad.html">Seguridad</a></li>
+                    <li><a href="mochila.html">Mochila</a></li>
+                    <li><a href="generoFijo.html">Género Fijo</a></li>
+                    <li><a href="numeroFrobFijo.html">Número Frobenius Fijo</a></li>
+                    <li><a href="generoMulti.html">Género y Multiplicidad Fijos</a></li>
+                </ul>
+            </nav>
+        </section>
+
+        <section id="sH">
+            <h2 id="GN">GÉNERO Y MULTIPLICIDAD FIJA</h2>
+            <p>En un semigrupo numérico con multiplicidad fija <strong>m</strong>, el <em>género</em>
+                <strong>g(S)</strong>
+                representa la cantidad de números naturales que no pueden generarse a partir de los generadores de
+                <strong>S</strong>. Formalmente:
+            </p>
+            <p>$$
+                g(S) \;=\; \bigl|\{n\in\mathbb{N} : n\notin S\}\bigr|.
+                $$</p>
+            <p>Al fijar además la multiplicidad <strong>m</strong>, se estudian las familias de semigrupos numéricos
+                cuyo menor
+                elemento es <strong>m </strong>(sin incluir el 0) y se analizan sus invariantes combinatorios y
+                algebraicos.</p>
+
+            <button onclick="propiedades()">Propiedades</button>
+            <div id="propiedades" style="display:none;">
+                <p id="text"><span class="punto"></span><strong>Cantidad de "gaps":</strong> representa cuántos números
+                    naturales faltan en el
+                    semigrupo
+                    numérico.</p>
+                <p id="text"><span class="punto"></span><strong>Relación con el número de Frobenius:</strong> en
+                    semigrupos simétricos se
+                    cumple la fórmula
+                    <span class="form-peque">$$f(S)=2g(S)-1$$</span>.
+                </p>
+                <p id="text"><span class="punto"></span><strong>Propiedades combinatorias:</strong> el género se
+                    describe en términos de
+                    combinaciones y
+                    particiones de números.</p>
+                <p id="text"><span class="punto"></span><strong>Invarianza bajo isomorfismo:</strong> semigrupos
+                    isomorfos tienen el mismo
+                    género.</p>
+            </div>
+
+            <button onclick="ejemplos()">Ejemplos</button>
+            <div id="ejemplo" style="display:none; ">
+                <p id="text"><strong>Ejemplo:</strong> si el género es 6 y la multiplicidad es 4, debemos de encontrar
+                    aquellos semigrupos numéricos que tengan 6 huecos (gaps) y que el menor elemento de estos elementos
+                    (quitando el 0) sea la multiplicidad dada. Un semigrupo numérico interno es <span
+                        class="form-peque">$$S=\langle
+                        4,7,10,13 \rangle$$</span> el cual cumple que
+                    <strong>g(S)=6</strong>,
+                    con huecos 1,2,3,5,6 y 9, cumpliendo este semigrupo con el criterio de multiplicidad.
+                </p>
+                <p id="text"><strong>Ejemplo:</strong> si el género es 7 y la multiplicidad es 5, un semigrupo numérico
+                    hoja que cumpla estas condiciones es <span class="form-peque">$$S=\langle
+                        5,8,9,11 \rangle$$</span> el cual cumple que
+                    <strong>g(S)=7</strong>,
+                    con huecos 1,2,3,4,6,7 y 12 cumpliendo este semigrupo con el criterio de multiplicidad. Además, es
+                    hoja dado que el número de Frobenius es mayor a todos los elementos del semigrupo (12).
+                </p>
+                <p id="text"><strong>Ejemplo:</strong> si el género es 5 y la multiplicidad es 5, debemos de encontrar
+                    aquellos semigrupos numéricos que tengan 6 huecos (gaps) y que el menor elemento de estos elementos
+                    (quitando el 0) sea la multiplicidad dada. Un semigrupo numérico interno es <span
+                        class="form-peque">$$S=\langle
+                        5,6,8,9 \rangle$$</span> el cual cumple que
+                    <strong>g(S)=5</strong>,
+                    con huecos 1,2,3,4 y 7 cumpliendo este semigrupo con el criterio de multiplicidad.
+                </p>
+                <p id="text"><strong>Ejemplo:</strong> si se introduce el género es 2 y la multiplicidad es 5, se
+                    indicará que estos valores son inválidos. Esto se debe a que se debe de cumplir el criterio en donde
+                    el género tiene que ser mayor o igual a la multiplicidad - 1 <span class="form-peque">$$g\ge m -
+                        1$$</span>
+                </p>
+            </div>
+
+            <button onclick="utilidades()">Utilidades</button>
+            <div id="utilidades" style="display:none;">
+                <p id="text"><span class="punto"></span><strong>Teoría de números:</strong> resolución de problemas
+                    diofánticos y
+                    representaciones.</p>
+                <p id="text"><span class="punto"></span><strong>Geometría algebraica:</strong> estudio de anillos de
+                    Cohen–Macaulay y esquemas.
+                </p>
+                <p id="text"><span class="punto"></span><strong>Teoría de códigos:</strong> diseño y análisis de códigos
+                    correctores de
+                    errores.</p>
+                <p id="text"><span class="punto"></span><strong>Combinatoria:</strong> problemas de particiones y
+                    conteos.</p>
+                <p id="text"><span class="punto"></span><strong>Optimización:</strong> algoritmos y teoría de juegos.
+                </p>
+                <p id="text"><span class="punto"></span><strong>Modelos computacionales:</strong> simulaciones en
+                    ingeniería y ciencia.</p>
+            </div>
+        </section>
+        </section>
+
+        <section id="sH">
+            <h2>Cálculo de semigrupos numéricos con género y multiplicidad fijos</h2>
+            <label for="generoInput">Género:</label>
+            <input type="number" id="generoInput" min="0" placeholder="Ej. 5" required />
+            <label for="multiplicidadInput">Multiplicidad:</label>
+            <input type="number" id="multiplicidadInput" min="1" placeholder="Ej. 3" required />
+            <button onclick="calcular()">Calcular</button>
+            <button onclick="vaciarResultados()">Vaciar</button>
+        </section>
+
+        <section id="sH">
+            <h3>Resultados:</h3>
+            <div id="resultadoArea"></div>
+            <p><strong>Comparación:</strong> <span id="comparacion"></span></p>
+        </section>
+
+    </main>
+
+    <footer id="f1"><a id="e1" href="documentocontacto.html">Documento de
+            contacto</a>---------------------------------------------------------------------
+        <a id="e1" href="documentacion.pdf">documentacion.pdf</a>
+    </footer>
+</body>
+
+</html>

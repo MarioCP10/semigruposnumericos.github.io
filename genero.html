@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Género</title>
+    <link rel="stylesheet" type="text/css" href="genero.css" />
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script type="text/javascript" id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+        </script>
+    <script>
+        /**
+         * @function mcd
+         * @description Calcula el máximo común divisor (MCD) de dos números usando Euclides iterativo.
+         * @param {number} a – Primer operando (mayor o igual a 0).
+         * @param {number} b – Segundo operando (mayor o igual a 0).
+         * @returns {number} – El MCD de a y b.
+         */
+        function mcd(a, b) {
+            while (b !== 0) {
+                let temp = b;
+                b = a % b;
+                a = temp;
+            }
+            return a;
+        }
+
+        /**
+         * @function reducemcd
+         * @description Calcula el MCD de todos los elementos de un array.
+         * @param {number[]} arr – Array de enteros positivos.
+         * @returns {number} – MCD global.
+         */
+        function reducemcd(arr) {
+            return arr.reduce((a, b) => mcd(a, b));
+        }
+
+        /**
+         * @function formaExpandida
+         * @description Genera primeros términos de la forma expandida de Hilbert para S.
+         * @param {number[]} S – Conjunto de generadores.
+         * @param {number} [numTerms=20] – Número de términos a producir.
+         * @returns {number[]} – Array ordenado con los términos.
+         */
+        function formaExpandida(S, numTerms = 20) {
+            let terms = new Set([0]);
+            let minS = Math.min(...S);
+
+            for (let i = 0; i < numTerms * minS; i++) {
+                let nuevosTerminos = new Set();
+                terms.forEach(t => {
+                    S.forEach(a => {
+                        if (t + a <= numTerms * minS) {
+                            nuevosTerminos.add(t + a);
+                        }
+                    });
+                });
+                nuevosTerminos.forEach(t => terms.add(t));
+            }
+
+            let result = Array.from(terms).sort((a, b) => a - b).slice(0, numTerms);
+            return result;
+        }
+
+        /**
+         * @function nFrob
+         * @description Calcula el número de Frobenius de un conjunto S de generadores.
+         * @param {number[]} S – Conjunto de generadores (todos > 0).
+         * @returns {(number|string)} – Número de Frobenius, o –1 si S contiene 1,
+         *                              o mensaje de error si mcd(S)!=1 o |S|<2.
+        */
+        function nFrob(S) {
+            if (S.includes(1)) {
+                return -1;
+            }
+
+            if (S.length < 2 || reducemcd(S) !== 1) {
+                return "No se puede calcular";
+            }
+
+            S.sort((a, b) => a - b);
+            let valorMax = S[S.length - 1] * S[S.length - 2];
+            let alcanzable = Array(valorMax + 1).fill(false);
+            alcanzable[0] = true;
+
+            for (let i = 1; i <= valorMax; i++) {
+                for (let a of S) {
+                    if (i - a >= 0 && alcanzable[i - a]) {
+                        alcanzable[i] = true;
+                        break;
+                    }
+                }
+            }
+
+            for (let i = valorMax; i >= 0; i--) {
+                if (!alcanzable[i]) {
+                    return i;
+                }
+            }
+            return "No se puede calcular";
+        }
+
+        /**
+         * @function calcularGeneroYHuecos
+         * @description Calcula género, lista de huecos y número de Frobenius.
+         * @param {number[]} S – Conjunto de generadores.
+         * @returns {{genero:number,huecos:number[],numFrobenius:(number|string)}}
+        */
+        function calcularGeneroYHuecos(S) {
+            let hilbertExpandida = formaExpandida(S);
+            let numFrobenius = nFrob(S);
+
+            //Se calculan los "gaps" o huecos
+            let maxNumber = Math.max(...hilbertExpandida);
+            let huecos = [];
+            for (let i = 0; i <= maxNumber; i++) {
+                if (!hilbertExpandida.includes(i)) {
+                    huecos.push(i);
+                }
+            }
+
+            let genero = huecos.length;
+
+            return { genero, huecos, numFrobenius };
+        }
+
+        /**
+         * @function verificarEquilibrioSemigrupo
+         * @description Determina si el semigrupo es equilibrado (pares ≙ impares).
+         * @param {number[]} S – Generadores.
+         * @returns {{genero:number,huecos:number[],numFrobenius:(number|string),explicacion:string}}
+         */
+        function verificarEquilibrioSemigrupo(S) {
+            //Se calcula el género, los huecos y el número de Frobenius
+            let { genero, huecos, numFrobenius } = calcularGeneroYHuecos(S);
+
+            //En esta variable se almacena si el género es equilibrado o no
+            let resultado = {
+                genero: genero,
+                huecos: huecos,
+                numFrobenius: numFrobenius,
+                explicacion: ""
+            };
+
+            if (genero % 2 !== 0) {
+                resultado.explicacion = "El género es impar, por lo que no puede ser un semigrupo numérico equilibrado.";
+            } else {
+                let pares = huecos.filter(hueco => hueco % 2 === 0).length;
+                let impares = huecos.filter(hueco => hueco % 2 !== 0).length;
+
+                if (pares === impares) {
+                    resultado.explicacion = "El género es par y tiene igual cantidad de huecos pares e impares. Es un semigrupo numérico equilibrado.";
+                } else {
+                    resultado.explicacion = `El género es par, pero hay ${pares} huecos pares y ${impares} huecos impares. No es un semigrupo numérico equilibrado.`;
+                }
+            }
+
+            return resultado;
+        }
+
+        /**
+         * @function calcular
+         * @description Lee input, valida, calcula y muestra resultados.
+         */
+        function calcular() {
+            let entrada = document.getElementById("inputNumeros").value;
+            let numeros = entrada.split(",").map(n => parseInt(n.trim())).filter(n => !isNaN(n) && n > 0);
+            let partes = entrada.split(",").map(s => s.trim());
+
+            for (let p of partes) {
+                if (!/^\d+$/.test(p)) {
+                    alert("Solo se permiten números enteros no negativos.");
+                    vaciarResultados();
+                    return;
+                }
+            }
+
+            if ((numeros.length === 1 && numeros[0] === 1) || numeros.includes(1)) {
+                document.getElementById("genero").innerText = "0";
+                document.getElementById("huecos_genero").innerText = "∅";
+                document.getElementById("frobenius").innerText = "-1";
+                document.getElementById("equilibrado").innerText = "No hay huecos";
+                return;
+            }
+
+            //Se debe de comprobar que cumple el criterio de semigrupo numérico
+            if (reducemcd(numeros) !== 1) {
+                alert("El conjunto de números que has metido no es un semigrupo numérico.");
+                vaciarResultados();
+                return;
+            }
+
+            let resultado = verificarEquilibrioSemigrupo(numeros);
+
+            document.getElementById("genero").innerText = resultado.genero;
+
+            //Si hay más de 20 huecos se truncará el resultado
+            let huecosGenero = resultado.huecos;
+            if (huecosGenero.length > 20) {
+                document.getElementById("huecos_genero").innerText = huecosGenero.slice(0, 20).join(", ") + " ...";
+            } else {
+                document.getElementById("huecos_genero").innerText = huecosGenero.join(", ");
+            }
+
+            document.getElementById("frobenius").innerText = resultado.numFrobenius;
+
+            //Mensaje de si es un semigrupo numérico equilibrado
+            let equilibrado = document.getElementById("equilibrado");
+            equilibrado.innerText = resultado.explicacion;
+        }
+
+        /**
+         * @function vaciarResultados
+         * @description Limpia todos los campos de salida e input.
+         */
+        function vaciarResultados() {
+            document.getElementById("inputNumeros").value = "";
+            document.getElementById("genero").innerText = "";
+            document.getElementById("huecos_genero").innerText = "";
+            document.getElementById("frobenius").innerText = "";
+            document.getElementById("equilibrado").innerText = "";
+        }
+    </script>
+    <script>
+        /**
+         * @function ejemplos
+         * @description Muestra u oculta la sección de ejemplos.
+         */
+        function ejemplos() {
+            var ejemplosDiv = document.getElementById("ejemplo");
+            if (ejemplosDiv.style.display === "none") {
+                ejemplosDiv.style.display = "block";
+            } else {
+                ejemplosDiv.style.display = "none";
+            }
+        }
+    </script>
+    <script>
+        /**
+         * @function propiedades
+         * @description Muestra u oculta la sección de propiedades.
+         */
+        function propiedades() {
+            var propiedadesDiv = document.getElementById("propiedades");
+            if (propiedadesDiv.style.display === "none") {
+                propiedadesDiv.style.display = "block";
+            } else {
+                propiedadesDiv.style.display = "none";
+            }
+        }
+    </script>
+    <script>
+        /**
+         * @function utilidades
+         * @description Muestra u oculta la sección de utilidades.
+         */
+        function utilidades() {
+            var utilidadesDiv = document.getElementById("utilidades");
+            if (utilidadesDiv.style.display === "none") {
+                utilidadesDiv.style.display = "block";
+            } else {
+                utilidadesDiv.style.display = "none";
+            }
+        }
+    </script>
+</head>
+
+<body>
+    <header>
+        <img id="logo" src="imagenes/logo.png" alt="logo de la pagina del tfg" width="50" height="50">
+        <h1 id="SN_principal">SEMIGRUPOS NUMÉRICOS</h1>
+        <ul>
+            <li><a href="index.html">Inicio</a></li>
+            <li><a href="visionmatematica.html">Visión matemática</a></li>
+            <li><a href="visioninformatica.html">Visión informática</a></li>
+            <li><a href="utilidades.html">Utilidades</a></li>
+            <li><a href="informacion.html">Información</a></li>
+            <li><a href="experiencias.html">Experiencias</a></li>
+        </ul>
+    </header>
+
+    <main>
+        <section>
+            <nav class="sidebar">
+                <ul>
+                    <li><a href="nFrobenius.html">Número de Frobenius</a></li>
+                    <li><a href="genero.html">Género</a></li>
+                    <li><a href="conductor.html">Conductor</a></li>
+                    <li><a href="serieHilbert.html">Serie de Hilbert</a></li>
+                    <li><a href="esminimal.html">Sistema Minimal</a></li>
+                    <li><a href="conjuntosApery.html">Conjuntos de Apéry</a></li>
+                    <li><a href="sistemaInfinito.html">Sistema Minimal Infinito</a></li>
+                </ul>
+            </nav>
+        </section>
+
+        <section id="sH">
+            <h2 id="GN">GÉNERO</h2>
+            <p>El género de un semigrupo numérico es la cantidad de números naturales que no pertenecen al semigrupo, es
+                decir, aquellos que no pueden ser generados por dicho semigrupo. Por tanto, dado un semigrupo numérico
+                <strong>S</strong>, el
+                género <strong>g(S)</strong> viene dado como:
+            </p>
+            <p>$$ g(S) = |\mathbb{N} \setminus S| $$</p>
+            <p>en donde se consideran aquellos elementos del semigrupo que no pueden ser generados bajo dicho semigrupo
+                numérico (en
+                algunos casos puede venir determinado por el número de Frobenius).</p>
+            <p>Por otro lado, un semigrupo numérico se considera equilibrado si y solo si el genero es par y haya el
+                mismo número de huecos pares que impares.</p>
+            <button onclick="propiedades()">Propiedades</button>
+            <div id="propiedades" style="display: none;">
+                <p id="text"><span class="punto"></span><strong>Cantidad de "gaps":
+                    </strong> representa cuantos números naturales "faltan" en el semigrupo numérico.</p>
+                <p id="text"><span class="punto"></span><strong>Relación con el número de Frobenius:
+                    </strong>los semigrupos numéricos simétricos es una formula que relaciona tanto al género como al
+                    número de Frobenius para los semigrupos numéricos particulares</p>
+                <p id="text"><span class="punto"></span><strong>Propiedades combinatorias:
+                    </strong>el género de un semigrupo puede describirse en términos de combinaciones y particiones de
+                    números naturales, relacionadas con propiedades algebráicas y estrcuturas del semigrupo</p>
+                <p id="text"><span class="punto"></span><strong>Invarianza bajo isomorfismo:
+                    </strong>aquellos semigrupos numéricos que son esencialmente los mismos (isomorfismo) tienen el
+                    mismo género</p>
+            </div>
+            <button onclick="ejemplos()">Ejemplos</button>
+            <div id="ejemplo" style="display: none;">
+                <p id="text"><strong>Ejemplo:</strong>Si<span class="form-peque"> \( A = \{2,5\} \)</span>, entonces el
+                    género será 2, donde los
+                    huecos del
+                    género serán 1 y 3. Vemos que el género es par, pero no presenta los mismos huecos pares (0) que
+                    impares (2).
+                </p>
+                <p id="text"><strong>Ejemplo:</strong> Si<span class="form-peque"> \( A = \{3,4,7\} \)</span>, entonces
+                    el género será 3, donde los
+                    huecos del
+                    género serán 1, 2 y 5. Vemos que el género es impar, por lo que no puede ser un semigrupo numérico
+                    equilibrado.
+                </p>
+                <p id="text"><strong>Ejemplo:</strong> Si<span class="form-peque"> \( A = \{3,8,13\} \)</span>, entonces
+                    el género será 6, donde los
+                    huecos del
+                    género serán 1, 2, 4, 5, 7 y 10. Vemos que este semigrupo numérico si es equilibrado ya que tiene el
+                    mismo número de huecos pares (3) que impares (3).
+                </p>
+            </div>
+            <button onclick="utilidades()">Utilidades</button>
+            <div id="utilidades" style="display: none;">
+                <p id="text"><span class="punto"></span><strong>Teoría de números
+                    </strong>se usa tanto para la resolución de problemas diofánticos como para el estudio de
+                    representaciones y factorizaciones.
+                </p>
+                <p id="text"><span class="punto"></span><strong>Geometría algebráica y conmutativa:
+                    </strong>los anillos de Cohen-Macaulay y los esquemas algebraicos llegan a ser una parte clave para
+                    su estudio y comprensión de los conceptos del semigrupo y género, donde se tienen aplicaciones en el
+                    estudio de esquemas algebraicos.
+                </p>
+                <p id="text"><span class="punto"></span><strong>Teoría códigos:
+                    </strong>a la hora de diseñar códigos correctores, el análisis del género y la estructura de los
+                    semigrupos numéricos facilita en cuanto al diseño y análisis de códigos correctores de errores.
+                </p>
+                <p id="text"><span class="punto"></span><strong>Combinatoria:
+                    </strong>se tienen en cuenta en temas relacionados con problemas combinatorios como particiones y
+                    combinaciones de números</p>
+                <p id="text"><span class="punto"></span><strong>Optimización y teoría de juegos:
+                    </strong>se suelen aplicar en el desarrollo de algoritmos de optimización y en la teoría de juegos
+                    para buscar la solución óptima.</p>
+                <p id="text"><span class="punto"></span><strong>Modelos computacionales:
+                    </strong>tiene un uso común en simulaciones y modelos, donde se suelen usar en modelos matemáticos y
+                    simulaciones computacionales en diversas áreas de la ingeniería y la ciencia.</p>
+            </div>
+        </section>
+
+        <section id="sH">
+            <h2>Cálculo del género de un semigrupo numérico</h2>
+            <label for="inputNumeros">Introduce los elementos del semigrupo separados por comas:</label>
+            <input type="text" id="inputNumeros" placeholder="Ej. 5,6,8" required>
+            <button onclick="calcular()">Calcular</button>
+            <button onclick="vaciarResultados()">Vaciar</button>
+        </section>
+
+        <section id="sH">
+            <h3>Resultados:</h3>
+            <p><strong>Género:</strong> <span id="genero"></span></p>
+            <p><strong>Huecos del género:</strong> <span id="huecos_genero"></span></p>
+            <p><strong>Número de Frobenius:</strong> <span id="frobenius"></span></p>
+            <p><strong>¿Equilibrado?:</strong> <span id="equilibrado"></span></p>
+        </section>
+    </main>
+
+    <footer id="f1"><a id="e1" href="documentocontacto.html">Documento de
+            contacto</a>---------------------------------------------------------------------
+        <a id="e1" href="documentacion.pdf">documentacion.pdf</a>
+    </footer>
+</body>
+
+</html>

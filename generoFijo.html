@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SN de género fijo</title>
+    <link rel="stylesheet" type="text/css" href="generoFijo.css" />
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script type="text/javascript" id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+        </script>
+    <script>
+        //caches para memoización para mejorar la eficiencia
+        let cacheGenero = {};
+        let cacheFrobenius = {};
+
+        /**
+         * @function mcd
+         * @description Calcula el máximo común divisor (MCD) de dos números usando Euclides.
+         * @param {number} a – Primer operando (mayor o igual a 0)
+         * @param {number} b – Segundo operando (mayor o igual a 0)
+         * @returns {number} – El MCD de a y b.
+         */
+        function mcd(a, b) {
+            while (b !== 0) {
+                a %= b;
+                let temp = a;
+                a = b;
+                b = temp;
+            }
+            return a;
+        }
+
+        /**
+         * @function clave
+         * @description Genera una clave única para un array S ordenado y con comas.
+         * @param {number[]} S – Conjunto de generadores.
+         * @returns {string} – Cadena "s1,s2,…,".
+         */
+        function clave(S) {
+            let copia = S.slice();
+            copia.sort((a, b) => a - b);
+            return copia.join(",") + ",";
+        }
+
+        /**
+         * @function calcularConductor
+         * @description Encuentra el conductor de ⟨S⟩ buscando un bloque de min(S) consecutivos.
+         * @param {number[]} S – Conjunto de generadores.
+         * @returns {number} – El conductor n tal que todos aquellos elementos mayores o iguales a n están en ⟨S⟩.
+         */
+        function calcularConductor(S) {
+            let minS = Math.min(...S);
+            let max_val = S.reduce((acc, cur) => acc + cur, 0);
+            let alcanzable = [];
+            let encontradoBloqueConsecutivo = false;
+            let consecutivosNecesarios = minS;
+            let conductor = max_val;
+            while (!encontradoBloqueConsecutivo) {
+                alcanzable = new Array(max_val + 1).fill(false);
+                alcanzable[0] = true;
+                for (let s of S) {
+                    for (let i = s; i <= max_val; i++) {
+                        alcanzable[i] = alcanzable[i] || alcanzable[i - s];
+                    }
+                }
+                let consecutivos = 0;
+                for (let i = 0; i <= max_val; i++) {
+                    consecutivos = alcanzable[i] ? consecutivos + 1 : 0;
+                    if (consecutivos >= consecutivosNecesarios) {
+                        conductor = i - consecutivosNecesarios + 1;
+                        encontradoBloqueConsecutivo = true;
+                        break;
+                    }
+                }
+                if (!encontradoBloqueConsecutivo) {
+                    max_val *= 2;
+                }
+            }
+            return conductor;
+        }
+
+        /**
+         * @function calcularGenero
+         * @description Cuenta huecos (< conductor) en ⟨S⟩ para hallar el género.
+         * @param {number[]} S – Conjunto de generadores.
+         * @returns {number} – Número de enteros no alcanzables (género).
+         */
+        function calcularGenero(S) {
+            let k = clave(S);
+            if (cacheGenero.hasOwnProperty(k)) {
+                return cacheGenero[k];
+            }
+
+            let minS = Math.min(...S);
+            let max_val = S.reduce((acc, cur) => acc + cur, 0);
+            let alcanzable = [];
+            let encontradoBloqueConsecutivo = false;
+            let consecutivosNecesarios = minS;
+            let genero = 0;
+            while (!encontradoBloqueConsecutivo) {
+                alcanzable = new Array(max_val + 1).fill(false);
+                alcanzable[0] = true;
+                for (let s of S) {
+                    for (let i = s; i <= max_val; i++) {
+                        alcanzable[i] = alcanzable[i] || alcanzable[i - s];
+                    }
+                }
+                let consecutivos = 0;
+                for (let i = 0; i <= max_val; i++) {
+                    consecutivos = alcanzable[i] ? consecutivos + 1 : 0;
+                    if (consecutivos >= consecutivosNecesarios) {
+                        encontradoBloqueConsecutivo = true;
+                        break;
+                    }
+                }
+                if (!encontradoBloqueConsecutivo) {
+                    max_val *= 2;
+                }
+            }
+
+            //Se usa el conductor para contar los huecos
+            let conductor = 0;
+            {
+                let consecutivos = 0;
+                for (let i = 0; i <= max_val; i++) {
+                    consecutivos = alcanzable[i] ? consecutivos + 1 : 0;
+                    if (consecutivos >= consecutivosNecesarios) {
+                        conductor = i - consecutivosNecesarios + 1;
+                        break;
+                    }
+                }
+            }
+            for (let i = 0; i < conductor; i++) {
+                if (!alcanzable[i])
+                    genero++;
+            }
+            cacheGenero[k] = genero;
+            return genero;
+        }
+
+        /**
+         * @function calcularFrobenius
+         * @description Encuentra el mayor entero no alcanzable en ⟨S⟩.
+         * @param {number[]} S – Conjunto de generadores.
+         * @returns {number} – Número de Frobenius o -1 si S = <1>.
+         */
+        function calcularFrobenius(S) {
+            let k = clave(S);
+            if (cacheFrobenius.hasOwnProperty(k)) {
+                return cacheFrobenius[k];
+            }
+            let max_val = S.reduce((acc, cur) => acc + cur, 0);
+            let alcanzable = new Array(max_val + 1).fill(false);
+            alcanzable[0] = true;
+            for (let s of S) {
+                for (let i = s; i <= max_val; i++) {
+                    alcanzable[i] = alcanzable[i] || alcanzable[i - s];
+                }
+            }
+            for (let i = max_val; i >= 0; i--) {
+                if (!alcanzable[i]) {
+                    cacheFrobenius[k] = i;
+                    return i;
+                }
+            }
+            cacheFrobenius[k] = -1;
+            return -1;
+        }
+
+        /**
+         * @function esMinimalHilbert
+         * @description Verifica minimalidad de Hilbert de S.
+         * @param {number[]} S – Conjunto de generadores.
+         * @returns {boolean} – True si minimal; false en caso contrario.
+         */
+        function esMinimalHilbert(S) {
+            if (S.length === 1) return true;
+            let minS = Math.min(...S);
+            let conductor = calcularConductor(S);
+            let limit = conductor + minS;
+
+            //Se genera la expansión de Hilbert
+            let hilbert = new Set();
+            let cola = [0];
+            hilbert.add(0);
+            while (cola.length > 0) {
+                let t = cola.pop();
+                for (let a of S) {
+                    let nuevoTermino = t + a;
+                    if (nuevoTermino <= limit && !hilbert.has(nuevoTermino)) {
+                        hilbert.add(nuevoTermino);
+                        cola.push(nuevoTermino);
+                    }
+                }
+            }
+
+            //Se comprueban los consecutivos
+            let consecutivos = 0;
+            let prev = -2;
+            let ordenadoHilbert = Array.from(hilbert).sort((a, b) => a - b);
+            for (let n of ordenadoHilbert) {
+                consecutivos = (n === prev + 1) ? consecutivos + 1 : 1;
+                if (consecutivos >= minS) break;
+                prev = n;
+            }
+            if (consecutivos < minS) return false;
+
+            //Se verifica que ningún elemento de S se pueda generar sin él mismo
+            for (let i = 0; i < S.length; i++) {
+                let copia = S.slice();
+                copia.splice(i, 1);
+                let forma = new Set();
+                let cola = [0];
+                forma.add(0);
+                let lim = S[i] + 1;
+                while (cola.length > 0) {
+                    let t = cola.pop();
+                    for (let a of copia) {
+                        let nuevo = t + a;
+                        if (nuevo <= lim && !forma.has(nuevo)) {
+                            forma.add(nuevo);
+                            cola.push(nuevo);
+                        }
+                    }
+                }
+                if (forma.has(S[i])) return false;
+            }
+
+            //Se verificar que todos los elementos generadores están en la expansión
+            for (let s of S) {
+                if (!hilbert.has(s)) return false;
+            }
+            return true;
+        }
+
+        /**
+         * @function esHoja
+         * @description Determina si S es hoja para el género dado.
+         * @param {number[]} S – Conjunto de generadores.
+         * @param {number} genero – Género dado.
+         * @returns {boolean}
+         */
+        function esHoja(S, genero) {
+            if (calcularGenero(S) !== genero) return false;
+            let f = calcularFrobenius(S);
+            if (f === -1) return false;
+            let max_elem = Math.max(...S);
+            return f > max_elem;
+        }
+
+        /**
+         * @function mcdEsUno
+         * @description Comprueba mcd(S)=1.
+         * @param {number[]} S – Conjunto de generadores.
+         * @returns {boolean}
+         */
+        function mcdEsUno(S) {
+            if (S.length === 0) return false;
+            let m = S[0];
+            for (let i = 1; i < S.length; i++) {
+                m = mcd(m, S[i]);
+                if (m === 1) return true;
+            }
+            return m === 1;
+        }
+
+        /**
+         * @function generarCombinaciones
+         * @description Genera todas las combinaciones posibles de un conjunto dado con un tamaño fijo usando backtracking.
+         * @param {Array<Array<number>>} subconjuntos - Array donde se almacenan las combinaciones generadas.
+         * @param {Array<number>} combinacion - Combinación parcial actual en construcción.
+         * @param {Array<number>} numeros - Conjunto de números disponibles para combinar.
+         * @param {number} inicio - Índice de inicio para el recorrido de números.
+         * @param {number} tamano - Tamaño de las combinaciones.
+         */
+        function generarCombinaciones(subconjuntos, combinacion, numeros, inicio, tamano) {
+            if (combinacion.length === tamano) {
+                subconjuntos.push(combinacion.slice());
+                return;
+            }
+            for (let i = inicio; i < numeros.length; i++) {
+                combinacion.push(numeros[i]);
+                generarCombinaciones(subconjuntos, combinacion, numeros, i + 1, tamano);
+                combinacion.pop();
+            }
+        }
+
+        /**
+         * @function comparaCantidades
+         * @description Compara la cantidad de semigrupos numéricos internos y hojas.
+         * @param {Array<Array<number>>} internos - Lista de semigrupos numéricos internos.
+         * @param {Array<Array<number>>} hojas - Lista de semigrupos numéricos hoja.
+         * @returns {string} Mensaje indicando cuál grupo tiene mayor cantidad o si son iguales.
+         */
+        function comparaCantidades(internos, hojas) {
+            let mensaje = "";
+            if (internos.length > hojas.length)
+                mensaje = "Hay más semigrupos numéricos internos que hojas.";
+            else if (internos.length < hojas.length)
+                mensaje = "Hay más semigrupos numéricos hojas que internos.";
+            else
+                mensaje = "Hay igual cantidad de semigrupos numéricos internos y hojas.";
+            return mensaje;
+        }
+
+        /**
+         * @function encontrarSemigruposYHojas
+         * @description Busca semigrupos internos y hojas de género g.
+         * @param {number} genero – Género fijo.
+         * @returns {string} – HTML con listas en notación LaTeX y mensaje de comparación.
+         */
+        function encontrarSemigruposYHojas(genero) {
+            let internos = [];
+            let hojas = [];
+            let limite = genero * 5;
+            let numeros = [];
+
+            for (let i = 2; i <= limite; i++) {
+                numeros.push(i);
+            }
+
+            //Se itera sobre tamaños de combinación desde 2 hasta el valor de genero dado
+            for (let tamano = 2; tamano <= genero; tamano++) {
+                let subconjuntos = [];
+                generarCombinaciones(subconjuntos, [], numeros, 0, tamano);
+                for (let subconjunto of subconjuntos) {
+                    if (!mcdEsUno(subconjunto)) continue;
+                    if (calcularGenero(subconjunto) !== genero) continue;
+                    if (!esMinimalHilbert(subconjunto)) continue;
+                    if (esHoja(subconjunto, genero))
+                        hojas.push(subconjunto);
+                    else
+                        internos.push(subconjunto);
+                }
+            }
+
+            //Se introduce el último semigrupo de la expansión para mejorar el tiempo de cómputo
+            let semigrupoExtra = [];
+            for (let i = genero + 1; i <= 2 * genero + 1; i++) {
+                semigrupoExtra.push(i);
+            }
+            internos.push(semigrupoExtra);
+
+            let resultado = "<h3>Semigrupos numéricos internos:</h3>";
+            for (let s of internos) {
+                resultado += "$$\\langle " + s.join(",\\, ") + " \\rangle$$";
+            }
+            resultado += "<h3>Semigrupos numéricos hoja:</h3>";
+            for (let h of hojas) {
+                resultado += "$$\\langle " + h.join(",\\, ") + " \\rangle$$";
+            }
+
+            resultado += "<h3>Comparación:</h3><p>" + comparaCantidades(internos, hojas) + "</p>";
+            return resultado;
+        }
+
+        /**
+         * @function calcular
+         * @description Función que se activa desde la interfaz. Valida el input del usuario,
+         * llama a `encontrarSemigruposYHojas`, calcula el tiempo de ejecución y muestra el resultado.
+         */
+        function calcular() {
+            cacheGenero = {};
+            cacheFrobenius = {};
+
+            let input = document.getElementById("inputNumeros").value.trim();
+
+            if (!/^\d+$/.test(input)) {
+                alert("Por favor, introduce un único número entero no negativo.");
+                vaciarResultados()
+                return;
+            }
+
+            let genero = parseInt(input);
+
+            if (genero < 0) {
+                alert("Por favor, introduce un número que sea 0 o mayor.");
+                vaciarResultados()
+                return;
+            }
+
+            let inicio = performance.now();
+            let resultado = encontrarSemigruposYHojas(genero);
+            let fin = performance.now();
+
+            let tiempo = ((fin - inicio) / 1000).toFixed(2);
+
+            document.getElementById("generoFijo").innerHTML = resultado;
+            document.getElementById("tiempoCalculo").innerHTML = tiempo + " s";
+
+            //Se Llama a MathJax para procesar el nuevo contenido matemático
+            if (window.MathJax) {
+                MathJax.typeset();
+            }
+        }
+
+        /**
+         * @function vaciarResultados
+         * @description Limpia los campos de entrada y resultados mostrados en la interfaz.
+         */
+        function vaciarResultados() {
+            document.getElementById("inputNumeros").value = "";
+            document.getElementById("generoFijo").innerHTML = "";
+            document.getElementById("tiempoCalculo").innerHTML = "";
+        }
+    </script>
+    <script>
+        /**
+         * @function ejemplos
+         * @description Muestra u oculta la sección de ejemplos.
+         */
+        function ejemplos() {
+            var ejemplosDiv = document.getElementById("ejemplo");
+            if (ejemplosDiv.style.display === "none") {
+                ejemplosDiv.style.display = "block";
+            } else {
+                ejemplosDiv.style.display = "none";
+            }
+        }
+    </script>
+    <script>
+        /**
+         * @function propiedades
+         * @description Muestra u oculta la sección de propiedades.
+         */
+        function propiedades() {
+            var propiedadesDiv = document.getElementById("propiedades");
+            if (propiedadesDiv.style.display === "none") {
+                propiedadesDiv.style.display = "block";
+            } else {
+                propiedadesDiv.style.display = "none";
+            }
+        }
+    </script>
+    <script>
+        /**
+         * @function utilidades
+         * @description Muestra u oculta la sección de utilidades.
+         */
+        function utilidades() {
+            var utilidadesDiv = document.getElementById("utilidades");
+            if (utilidadesDiv.style.display === "none") {
+                utilidadesDiv.style.display = "block";
+            } else {
+                utilidadesDiv.style.display = "none";
+            }
+        }
+    </script>
+</head>
+
+<body>
+    <header>
+        <img id="logo" src="imagenes/logo.png" alt="logo de la pagina del tfg" width="50" height="50">
+
+        <h1 id="SN_principal">SEMIGRUPOS NUMÉRICOS</h1>
+
+        <ul>
+            <li><a href="index.html">Inicio</a></li>
+            <li><a href="visionmatematica.html">Visión matemática</a></li>
+            <li><a href="visioninformatica.html">Visión informática</a></li>
+            <li><a href="utilidades.html">Utilidades</a></li>
+            <li><a href="informacion.html">Información</a></li>
+            <li><a href="experiencias.html">Experiencias</a></li>
+        </ul>
+
+    </header>
+    <main>
+        <section>
+            <nav class="sidebar">
+                <ul>
+                    <li><a href="automatas.html">Automatas</a></li>
+                    <li><a href="seguridad.html">Seguridad</a></li>
+                    <li><a href="mochila.html">Mochila</a></li>
+                    <li><a href="generoFijo.html">Género Fijo</a></li>
+                    <li><a href="numeroFrobFijo.html">Número Frobenius Fijo</a></li>
+                    <li><a href="generoMulti.html">Género y Multiplicidad Fijos</a></li>
+                </ul>
+            </nav>
+        </section>
+
+        <section id="sH">
+            <h2 id="SH">SEMIGRUPOS NUMÉRICOS DE GÉNERO FIJO</h2>
+            <p>
+                Dado un conjunto de números enteros positivos primos relativos entre sí, <span class="form-peque">
+                    𝐴 = {𝑎₁, 𝑎₂, …, 𝑎ₖ}
+                </span>, se define un semigrupo numérico como el conjunto formado por todas las combinaciones lineales
+                no negativas
+                de los elementos de 𝐴, es decir, todos los números que pueden expresarse como 𝑛₁𝑎₁ + 𝑛₂𝑎₂ + … +
+                𝑛ₖ𝑎ₖ, con 𝑛ᵢ
+                enteros no negativos. El género de un semigrupo se corresponde con la cantidad de enteros positivos (los
+                huecos) que
+                no se pueden obtener de dichas combinaciones, hasta llegar al conductor, que es el primer número a
+                partir del cual
+                todos los enteros son alcanzables. Así, estudiar los semigrupos numéricos de género fijo consiste en
+                clasificar y
+                analizar aquellos semigrupos que presentan un número determinado de huecos, lo cual aporta claridad en
+                el
+                conocimiento de su estructura y en sus aplicaciones en teoría de números y problemas algebraicos.
+            </p>
+            <p id="text">
+                Los <strong>semigrupos numéricos internos</strong> son aquellos nodos del árbol que poseen
+                descendientes. En otras palabras, un semigrupo interno es aquel a partir del
+                cual es posible obtener al menos un semigrupo de género <span class="form-peque">\(g+1\)</span> (u otro
+                mayor) mediante la eliminación
+                de uno de sus
+                generadores mínimos sin perder la propiedad de ser un semigrupo numérico. Estos nodos indican puntos de
+                posible
+                bifurcación en la estructura del árbol y suelen tener más de una opción de extensión.
+            </p>
+            <p id="text">
+                Por otro lado, los <strong>semigrupos numéricos hoja</strong> son aquellos que, además de cumplir con
+                las propiedades de un semigrupo numérico, tienen un número de Frobenius (el
+                mayor entero positivo que no pertenece al semigrupo) que es mayor que el máximo generador del conjunto.
+                Esto los
+                convierte en semigrupos con una estructura más dispersa, donde los huecos y el conductor juegan un papel
+                clave en su
+                clasificación. Los semigrupos hoja son útiles para explorar configuraciones extremas dentro de un género
+                fijo.
+            </p>
+            <button onclick="propiedades()">Propiedades</button>
+            <div id="propiedades" style="display: none;">
+                <p id="text">
+                    <span class="punto"></span><strong>Determinación única del género:</strong> cada semigrupo numérico
+                    de género
+                    fijo posee un valor único que indica la cantidad de huecos –los enteros positivos que no pueden
+                    expresarse como
+                    combinación lineal de sus generadores hasta llegar al conductor.
+                </p>
+                <p id="text">
+                    <span class="punto"></span><strong>Presencia de un conductor:</strong> existe un entero, denominado
+                    conductor, a
+                    partir del cual todos los números son alcanzables dentro del semigrupo, evidenciando la densidad de
+                    la
+                    estructura a partir de ese punto.
+                </p>
+                <p id="text">
+                    <span class="punto"></span><strong>Cierre bajo suma y estabilidad:</strong> al ser cerrados bajo la
+                    operación
+                    suma, estos semigrupos mantienen su estructura algebraica, lo que facilita su análisis y
+                    clasificación según su
+                    género.
+                </p>
+                <p id="text">
+                    <span class="punto"></span><strong>Aplicación en problemas de clasificación:</strong> la
+                    identificación y
+                    análisis de semigrupos numéricos de género fijo permiten explorar problemas en teoría de números y
+                    en otros
+                    ámbitos matemáticos, estableciendo vínculos con estructuras algebraicas y combinatorias.
+                </p>
+            </div>
+            <button onclick="ejemplos()">Ejemplos</button>
+            <div id="ejemplo" style="display: none;">
+                <p id="text">
+                    <strong>Ejemplo 1 (Género 1):</strong> si el género fijo es <span class="form-peque">\(1\)</span>,
+                    el único semigrupo interno que
+                    hay es
+                    <span class="form-peque">\( \langle2,3\rangle \)</span>. En este caso, el único hueco es <span
+                        class="form-peque">\(1\)</span> y, a partir de <span class="form-peque">\(2\)</span>, todas las
+                    combinaciones
+                    lineales
+                    no negativas forman el semigrupo numérico.
+                </p>
+                <p id="text">
+                    <strong>Ejemplo 2 (Género 2):</strong> para género fijo <span class="form-peque">\(2\)</span>, un
+                    semigrupo numérico interno es
+                    <span class="form-peque">\( \langle3,4,5\rangle \)</span>. Aquí, los únicos huecos son <span
+                        class="form-peque">\(1\)</span> y <span class="form-peque">\(2\)</span>; a partir de <span
+                        class="form-peque">\(3\)</span> se pueden obtener
+                    todos los
+                    números,
+                    lo que define el género como <span class="form-peque">\(2\)</span>.
+                </p>
+                <p id="text">
+                    <strong>Ejemplo 3 (Género 3):</strong> si el género fijo es <span class="form-peque">\(3\)</span>,
+                    el único semigrupo hoja resultante es
+                    <span class="form-peque">\( \langle3,4\rangle \)</span>. Los huecos resultantes son <span
+                        class="form-peque">\(\{1,2,5\}\)</span> y el número de Frobenius es <span
+                        class="form-peque">\(5\)</span>, mayor que
+                    el máximo
+                    generador <span class="form-peque">\(4\)</span>.
+                </p>
+                <p id="text">
+                    <strong>Ejemplo 4 (Género 4):</strong> un semigrupo hoja para género fijo <span
+                        class="form-peque">\(4\)</span> es
+                    <span class="form-peque">\( \langle3,5\rangle \)</span>. En este caso, los huecos son <span
+                        class="form-peque">\(\{1,2,4,7\}\)</span> de acuerdo con las combinaciones
+                    posibles,
+                    estableciendo
+                    el género como <span class="form-peque">\(4\)</span>. Sin embargo, al ser el número de Frobenius
+                    mayor que todos los elementos del
+                    semigrupo (nFrob = <span class="form-peque">\(7\))</span>, se considera hoja.
+                </p>
+                <p id="text">
+                    <strong>Ejemplo 5 (Género 5):</strong> para género fijo <span class="form-peque">\(5\)</span>, se
+                    puede considerar el semigrupo númerico interno
+                    <span class="form-peque">\( \langle5,6,7,9\rangle \)</span>. Aquí, tras calcular las combinaciones
+                    lineales se
+                    obtienen los huecos
+                    <span class="form-peque">\(\{1,2,3,4,8\}\)</span>, lo
+                    que
+                    confirma que el género es <span class="form-peque">\(5\)</span>.
+                </p>
+            </div>
+            <button onclick="utilidades()">Utilidades</button>
+            <div id="utilidades" style="display: none;">
+                <p id="text">
+                    <span class="punto"></span><strong>Optimización de algoritmos y recursos:</strong>
+                    el programa permite explorar estrategias de optimización mediante la identificación de semigrupos
+                    numéricos, lo
+                    que facilita la creación de algoritmos eficientes para la asignación óptima de recursos y la
+                    resolución de
+                    problemas complejos en áreas como la investigación operativa y la programación.
+                </p>
+                <p id="text">
+                    <span class="punto"></span><strong>Aplicaciones matemáticas avanzadas:</strong>
+                    sirve como una herramienta didáctica para comprender conceptos fundamentales de la teoría de números
+                    y
+                    combinaciones lineales, apoyando la enseñanza de semigrupos numéricos, programación dinámica y
+                    técnicas de
+                    optimización.
+                </p>
+                <p id="text">
+                    <span class="punto"></span><strong>Modelado y simulación en logística:</strong>
+                    al representar combinaciones de números y restricciones, el programa se vuelve útil para modelar
+                    problemas
+                    logísticos reales, como la organización de inventarios o la optimización del empaquetado,
+                    permitiendo simular
+                    escenarios y optimizar procesos.
+                </p>
+                <p id="text">
+                    <span class="punto"></span><strong>Análisis en informática y teoría de números:</strong>
+                    la herramienta apoya la investigación en áreas como la optimización combinatoria, el diseño de
+                    algoritmos y la
+                    teoría de grafos, integrando conceptos algebraicos con aplicaciones computacionales para el análisis
+                    de
+                    estructuras complejas.
+                </p>
+            </div>
+        </section>
+
+        <section id="sH">
+            <h2>Semigrupos numéricos de género fijo</h2>
+            <label for="inputNumeros">Introduce el género:</label>
+            <input type="number" id="inputNumeros" min="0" placeholder="Ej. 3" required>
+            <button onclick="calcular()">Calcular</button>
+            <button onclick="vaciarResultados()">Vaciar</button>
+        </section>
+
+        <section id="sH">
+            <h2>Semigrupos numéricos que tengan ese género:</h2>
+            <div id="generoFijo"></div>
+            <h3>Tiempo de cálculo:</h3>
+            <div id="tiempoCalculo"></div>
+        </section>
+    </main>
+
+    <footer id="f1"><a id="e1" href="documentocontacto.html">Documento de
+            contacto</a>---------------------------------------------------------------------
+        <a id="e1" href="documentacion.pdf">documentacion.pdf</a>
+    </footer>
+</body>
+
+</html>

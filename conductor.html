@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conductor</title>
+    <link rel="stylesheet" type="text/css" href="conductor.css" />
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script type="text/javascript" id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+        </script>
+    <script>
+        /**
+         * @function mcd
+         * @description Calcula el máximo común divisor (MCD) de dos números usando Euclides.
+         * @param {number} a – Primer operando (mayor o igual a 0)
+         * @param {number} b – Segundo operando (mayor o igual a 0)
+         * @returns {number} – El MCD de a y b.
+         */
+        function mcd(a, b) {
+            while (b) {
+                a %= b;
+                [a, b] = [b, a];
+            }
+            return a;
+        }
+
+        /**
+         * @function reducemcd
+         * @description Calcula el MCD de todos los elementos de un array.
+         * @param {number[]} arr – Array de enteros positivos.
+         * @returns {number} – MCD de todos los elementos.
+         */
+        function reducemcd(arr) {
+            return arr.reduce((a, b) => mcd(a, b));
+        }
+
+        /**
+         * @function nFrob
+         * @description Calcula el número de Frobenius de un conjunto S de generadores.
+         * @param {number[]} S – Conjunto de generadores (todos > 0).
+         * @returns {(number|string)} – Número de Frobenius, o –1 si S contiene 1,
+         *                              o mensaje de error si mcd(S)!=1 o |S|<2.
+         */
+        function nFrob(S) {
+            if (S.includes(1)) {
+                return -1;
+            }
+
+            if (S.length < 2 || reducemcd(S) !== 1) {
+                return "No se puede calcular";
+            }
+
+            S.sort((a, b) => a - b);
+            let valorMax = S[S.length - 1] * S[S.length - 2];
+            let alcanzable = Array(valorMax + 1).fill(false);
+            alcanzable[0] = true;
+
+            for (let i = 1; i <= valorMax; i++) {
+                for (let a of S) {
+                    if (i - a >= 0 && alcanzable[i - a]) {
+                        alcanzable[i] = true;
+                        break;
+                    }
+                }
+            }
+
+            for (let i = valorMax; i >= 0; i--) {
+                if (!alcanzable[i]) {
+                    return i;
+                }
+            }
+            return "No se puede calcular";
+        }
+
+        /**
+         * @function calcular
+         * @description Lee la entrada, valida semigrupo, calcula conductor y muestra resultado.
+         */
+        function calcular() {
+            const inputNumeros = document.getElementById("inputNumeros").value;
+            const partes = inputNumeros.split(",").map(num => num.trim());
+            const numeros = inputNumeros
+                .split(",")
+                .map(num => parseInt(num.trim()))
+                .filter(num => !isNaN(num));
+            const resultadoConductor = document.getElementById("resultadoConductor");
+
+            for (let p of partes) {
+                if (!/^\d+$/.test(p)) {
+                    alert("Solo se permiten números enteros no negativos.");
+                    vaciarResultados();
+                    return;
+                }
+            }
+
+            //Se debe de comprobar que cumple el criterio de semigrupo numérico
+            if (reducemcd(numeros) !== 1) {
+                alert("El conjunto introducido no forma un semigrupo numérico.");
+                vaciarResultados();
+                return;
+            }
+
+            const numFrob = nFrob(numeros);
+            if (numFrob === "No se puede calcular") {
+                resultadoConductor.textContent = "No se puede calcular";
+            } else {
+                const conductor = numFrob + 1;
+                resultadoConductor.textContent = conductor;
+            }
+        }
+
+        /**
+         * @function vaciarResultados
+         * @description Limpia el campo de entrada y el resultado.
+         */
+        function vaciarResultados() {
+            document.getElementById("inputNumeros").value = "";
+            document.getElementById("resultadoConductor").textContent = "";
+        }
+    </script>
+    <script>
+        /**
+         * @function ejemplos
+         * @description Muestra u oculta la sección de ejemplos.
+         */
+        function ejemplos() {
+            var ejemplosDiv = document.getElementById("ejemplo");
+            if (ejemplosDiv.style.display === "none") {
+                ejemplosDiv.style.display = "block";
+            } else {
+                ejemplosDiv.style.display = "none";
+            }
+        }
+    </script>
+    <script>
+        /**
+         * @function propiedades
+         * @description Muestra u oculta la sección de propiedades.
+         */
+        function propiedades() {
+            var propiedadesDiv = document.getElementById("propiedades");
+            if (propiedadesDiv.style.display === "none") {
+                propiedadesDiv.style.display = "block";
+            } else {
+                propiedadesDiv.style.display = "none";
+            }
+        }
+    </script>
+    <script>
+        /**
+         * @function utilidades
+         * @description Muestra u oculta la sección de utilidades.
+         */
+        function utilidades() {
+            var utilidadesDiv = document.getElementById("utilidades");
+            if (utilidadesDiv.style.display === "none") {
+                utilidadesDiv.style.display = "block";
+            } else {
+                utilidadesDiv.style.display = "none";
+            }
+        }
+    </script>
+</head>
+
+<body>
+    <header>
+        <img id="logo" src="imagenes/logo.png" alt="logo de la pagina del tfg" width="50" height="50">
+
+        <h1 id="SN_principal">SEMIGRUPOS NUMÉRICOS</h1>
+
+        <ul>
+            <li><a href="index.html">Inicio</a></li>
+            <li><a href="visionmatematica.html">Visión matemática</a></li>
+            <li><a href="visioninformatica.html">Visión informática</a></li>
+            <li><a href="utilidades.html">Utilidades</a></li>
+            <li><a href="informacion.html">Información</a></li>
+            <li><a href="experiencias.html">Experiencias</a></li>
+        </ul>
+
+    </header>
+    <main>
+        <section>
+            <nav class="sidebar">
+                <ul>
+                    <li><a href="nFrobenius.html">Número de Frobenius</a></li>
+                    <li><a href="genero.html">Género</a></li>
+                    <li><a href="conductor.html">Conductor</a></li>
+                    <li><a href="serieHilbert.html">Serie de Hilbert</a></li>
+                    <li><a href="esminimal.html">Sistema Minimal</a></li>
+                    <li><a href="conjuntosApery.html">Conjuntos de Apéry</a></li>
+                    <li><a href="sistemaInfinito.html">Sistema Minimal Infinito</a></li>
+                </ul>
+            </nav>
+        </section>
+
+        <section id="sH">
+            <h2 id="SH">CONDUCTOR</h2>
+            <p>El <strong>conductor</strong> de un semigrupo numérico es un concepto clave que describe el límite entre
+                los números
+                generables y no generables (huecos) del semigrupo.</p>
+
+            <p><strong>Definición y fórmula del conductor</strong></p>
+
+            <p>Dado un semigrupo numérico <strong>S</strong>, el conductor es el menor número <strong>c</strong> tal que
+                todos los
+                números mayores o iguales a <strong>c</strong> pertenecen al semigrupo. Matemáticamente, el conductor
+                puede
+                expresarse como:</p>
+
+            <p>$$ c = \max(H(S)) + 1 $$</p>
+
+            <p>Aquí, <strong>H(S)</strong> representa el conjunto de huecos del semigrupo, es decir, los números que no
+                pueden ser
+                generados mediante combinaciones lineales no negativas de los generadores del semigrupo.</p>
+            <button onclick="propiedades()">Propiedades</button>
+            <div id="propiedades" style="display: none;">
+                <p id="text"><span class="punto"></span><strong>Delimitación de huecos:</strong> El conductor marca la
+                    transición
+                    entre los números no generables (huecos) y los números generables del semigrupo.
+                </p>
+                <p id="text"><span class="punto"></span><strong>Relación con el género:</strong> El conductor está
+                    directamente
+                    relacionado con el género del semigrupo, ya que todos los huecos están por debajo del conductor.
+                </p>
+                <p id="text"><span class="punto"></span><strong>Unicidad:</strong> Todo semigrupo numérico tiene un
+                    único conductor,
+                    determinado por el mayor hueco más uno.
+                </p>
+                <p id="text"><span class="punto"></span><strong>Generación completa:</strong> A partir del conductor,
+                    todos los números
+                    mayores o iguales pueden generarse mediante combinaciones lineales no negativas de los generadores
+                    del semigrupo.
+                </p>
+            </div>
+            <button onclick="ejemplos()">Ejemplos</button>
+            <div id="ejemplo" style="display: none;">
+                <p id="text"><strong>Ejemplo:</strong> Consideremos el semigrupo numérico <span
+                        class="form-peque">\(\langle3,5\rangle \)</span>.
+                    Este conjunto genera el semigrupo numérico compuesto por <span class="form-peque">\( S = \{0, 3, 5,
+                        6, 8, 9, 10, 11, 12, 13, 14, 15,\ldots\} \)</span>. Los
+                    huecos serían
+                    <span class="form-peque">\( H(S) = \{1, 2, 4, 7\} \)</span>.
+                    El mayor hueco es <span class="form-peque">\( 7 \)</span>, por lo que el conductor se calcula como:
+
+                    <span class="form-peque">\[
+                        c = \max(H(S)) + 1 = 7 + 1 = 8.
+                        \]</span>
+
+                    Esto indica
+                    que todos
+                    los números desde el 8 en adelante son generables por <span class="form-peque">\(\{3,5\}
+                        \)</span>.
+                </p>
+                <p id="text"><strong>Ejemplo:</strong> Consideremos el semigrupo numérico <span class="form-peque">\(
+                        \langle4,9\rangle \)</span>.
+                    Este conjunto genera el semigrupo numérico compuesto por <span class="form-peque">\( S = \{0, 4, 8,
+                        9, 12, 13, 16, 17, 18, 20, 21, 22, 24, 25, 26, 27, 28,\ldots\} \)</span>. Los
+                    huecos serían
+                    <span class="form-peque">\( H(S) = \{1, 2, 3, 5, 6, 7, 10, 11, 14, 15, 19, 23\} \)</span>.
+                    El mayor hueco es <span class="form-peque">\( 23 \)</span>, por lo que el conductor se calcula como:
+
+                    <span class="form-peque">\[
+                        c = \max(H(S)) + 1 = 23 + 1 = 24.
+                        \]</span>
+
+                    Esto indica
+                    que todos
+                    los números desde el 24 en adelante son generables por <span class="form-peque">\(\{4,9\}
+                        \)</span>.
+                </p>
+                <p id="text"><strong>Ejemplo:</strong> Consideremos el semigrupo numérico <span
+                        class="form-peque">\(\langle5,7,11\rangle \)</span>.
+                    Este conjunto genera el semigrupo numérico compuesto por <span class="form-peque">\( S = \{0, 5, 7,
+                        10, 11, 12, 14, 15, 16,
+                        17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27,\ldots\} \)</span>. Los
+                    huecos serían
+                    <span class="form-peque">\( H(S) = \{1, 2, 3, 4, 6, 8, 9, 13\} \)</span>.
+                    El mayor hueco es <span class="form-peque">\( 13 \)</span>, por lo que el conductor se calcula como:
+
+                    <span class="form-peque">\[
+                        c = \max(H(S)) + 1 = 13 + 1 = 14.
+                        \]</span>
+
+                    Esto indica
+                    que todos
+                    los números desde el 14 en adelante son generables por <span class="form-peque">\(\{5,7,11\}
+                        \)</span>.
+                </p>
+                <p id="text"><strong>Ejemplo:</strong> Consideremos el semigrupo numérico <span class="form-peque">\(
+                        \langle4,13,19\rangle \)</span>.
+                    Este conjunto genera el semigrupo numérico compuesto por <span class="form-peque">\( S = \{0, 4, 8,
+                        12, 13, 16, 17, 19, 20, 21, 23, 24, 25, 26, 27, 28, 29,\ldots\} \)</span>. Los
+                    huecos serían
+                    <span class="form-peque">\( H(S) = \{1, 2, 3, 5, 6, 7, 9, 10, 11, 14, 15, 18, 22\} \)</span>.
+                    El mayor hueco es <span class="form-peque">\( 22 \)</span>, por lo que el conductor se calcula como:
+
+                    <span class="form-peque">\[
+                        c = \max(H(S)) + 1 = 22 + 1 = 23.
+                        \]</span>
+
+                    Esto indica
+                    que todos
+                    los números desde el 23 en adelante son generables por <span class="form-peque">\(\{4,13,19\}
+                        \)</span>.
+                </p>
+            </div>
+            <button onclick="utilidades()">Utilidades</button>
+            <div id="utilidades" style="display: none;">
+                <p id="text"><span class="punto"></span><strong>Delimitación de huecos: </strong>conocer el conductor
+                    permite
+                    identificar claramente
+                    el conjunto de huecos del semigrupo, ayudando a entender su estructura interna y propiedades
+                    combinatorias.
+                </p>
+                <p id="text"><span class="punto"></span><strong>Optimización en combinatoria: </strong>el conductor es
+                    clave para
+                    estudiar combinaciones
+                    lineales no negativas, lo que tiene aplicaciones en problemas de optimización y empaquetamiento.
+                </p>
+                <p id="text"><span class="punto"></span><strong>Análisis algebraico: </strong>el conductor está
+                    relacionado con el
+                    género del semigrupo
+                    y su estructura algebraica, siendo esencial en la clasificación y el estudio de semigrupos
+                    numéricos.
+                </p>
+                <p id="text"><span class="punto"></span><strong>Aplicaciones computacionales: </strong>se utiliza en
+                    algoritmos para
+                    generar
+                    y analizar semigrupos, así como para resolver problemas en criptografía y teoría de números.
+                </p>
+                <p id="text"><span class="punto"></span><strong>Modelado de sistemas: </strong>el conductor ayuda a
+                    modelar sistemas
+                    reales donde se
+                    requieren restricciones numéricas, como en logística o sistemas de producción.
+                </p>
+            </div>
+        </section>
+
+        <section id="sH">
+            <h2>Comprobación del conductor de un semigrupo numérico</h2>
+            <label for="inputNumeros">Introduce los elementos del semigrupo separados por comas:</label>
+            <input type="text" id="inputNumeros" placeholder="Ej. 3,7,9" required>
+            <button onclick="calcular()">Calcular</button>
+            <button onclick="vaciarResultados()">Vaciar</button>
+        </section>
+
+        <section id="sH">
+            <p><strong>Conductor:</strong> <span id="resultadoConductor"></span></p>
+        </section>
+
+    </main>
+
+    <footer id="f1"><a id="e1" href="documentocontacto.html">Documento de
+            contacto</a>---------------------------------------------------------------------
+        <a id="e1" href="documentacion.pdf">documentacion.pdf</a>
+    </footer>
+</body>
+
+</html>

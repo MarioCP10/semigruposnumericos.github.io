@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mochila</title>
+    <link rel="stylesheet" type="text/css" href="mochila.css" />
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script type="text/javascript" id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+        </script>
+    <script>
+        /**
+         * @function mcd
+         * @description Calcula el máximo común divisor (MCD) de dos números usando Euclides.
+         * @param {number} a – Primer operando (mayor o igual a 0)
+         * @param {number} b – Segundo operando (mayor o igual a 0)
+         * @returns {number} – El MCD de a y b.
+         */
+        function mcd(a, b) {
+            while (b !== 0) {
+                let temp = b;
+                b = a % b;
+                a = temp;
+            }
+            return a;
+        }
+
+        /**
+         * @function reducemcd
+         * @description Calcula el MCD de todos los elementos de un array.
+         * @param {number[]} arr – Array de enteros positivos.
+         * @returns {number} – MCD de todos los elementos.
+         */
+        function reducemcd(arr) {
+            return arr.reduce((a, b) => mcd(a, b));
+        }
+
+        /**
+         * @function problemaMochila
+         * @description Resuelve la mochila ilimitada usando programación dinámica.
+         * @param {number[]} numeros – Pesos/valores disponibles (enteros no negativos).
+         * @param {number} capacidad – Capacidad máxima (entero mayor o igual a 0).
+         * @returns {{valorMaximo:number, combinaciones:number[]}}
+         *   valorMaximo – Suma máxima alcanzable menor o igual a capacidad.
+         *   combinaciones – Lista de elementos que alcanzan ese valor.
+         */
+        function problemaMochila(numeros, capacidad) {
+            let tablaDinamica = Array(capacidad + 1).fill(0);
+            let combinaciones = Array(capacidad + 1).fill(null).map(() => []);
+
+            for (let i = 0; i <= capacidad; i++) {
+                for (let n of numeros) {
+                    if (i - n >= 0 && tablaDinamica[i - n] + n > tablaDinamica[i]) {
+                        tablaDinamica[i] = tablaDinamica[i - n] + n;
+                        combinaciones[i] = [...combinaciones[i - n], n];
+                    }
+                }
+            }
+
+            return { valorMaximo: tablaDinamica[capacidad], combinaciones: combinaciones[capacidad] };
+        }
+
+        /**
+         * @function formateaCombinacion
+         * @description Agrupa una combinación en forma “(count x valor) + ...”.
+         * @param {number[]} combinacion – Lista de elementos seleccionados.
+         * @returns {string} – Cadena formateada.
+         */
+        function formateaCombinacion(combinacion) {
+            let conteo = {};
+            combinacion.forEach(num => {
+                conteo[num] = (conteo[num] || 0) + 1;
+            });
+
+            return Object.entries(conteo).map(([num, count]) => `(${count} x ${num})`).join(" + ");
+        }
+
+        /**
+         * @function calcular
+         * @description Lee entrada, valida semigrupo, ejecuta mochila y muestra resultados.
+         */
+        function calcular() {
+            let entrada = document.getElementById("inputNumeros").value;
+            let numeros = entrada.split(",").map(n => parseInt(n.trim())).filter(n => !isNaN(n) && n > 0);
+            let capacidad = parseInt(document.getElementById("capacidad").value);
+            let partes = entrada.split(",").map(s => s.trim());
+            let capacidadEntrada = document.getElementById("capacidad").value.trim();
+
+            for (let p of partes) {
+                if (!/^\d+$/.test(p) || isNaN(capacidad) || capacidad < 0 || !/^\d+$/.test(capacidadEntrada)) {
+                    alert("Solo se permiten números enteros no negativos.");
+                    vaciarResultados();
+                    return;
+                }
+            }
+
+            //Se debe de comprobar que cumple el criterio de semigrupo numérico
+            if (reducemcd(numeros) !== 1) {
+                alert("El conjunto ingresado no es un semigrupo numérico.");
+                vaciarResultados();
+                return;
+            }
+
+            let inicio = performance.now();
+            let resultado = problemaMochila(numeros, capacidad);
+            let fin = performance.now();
+
+            let combinacionFormateada = formateaCombinacion(resultado.combinaciones);
+
+            document.getElementById("mochila").innerText = `Valor máximo alcanzable: ${resultado.valorMaximo}`;
+            document.getElementById("combinacion").innerText = `${combinacionFormateada}`;
+            document.getElementById("tiempoCalculo").innerText = `${((fin - inicio) / 1000).toFixed(6)} segundos`;
+        }
+
+        /**
+         * @function vaciarResultados
+         * @description Limpia todos los campos de entrada y salida.
+         */
+        function vaciarResultados() {
+            document.getElementById("mochila").innerText = "";
+            document.getElementById("combinacion").innerText = "";
+            document.getElementById("tiempoCalculo").innerText = "";
+            document.getElementById("inputNumeros").value = "";
+            document.getElementById("capacidad").value = "";
+        }
+    </script>
+    <script>
+        /**
+         * @function ejemplos
+         * @description Muestra u oculta la sección de ejemplos.
+         */
+        function ejemplos() {
+            var ejemplosDiv = document.getElementById("ejemplo");
+            if (ejemplosDiv.style.display === "none") {
+                ejemplosDiv.style.display = "block";
+            } else {
+                ejemplosDiv.style.display = "none";
+            }
+        }
+    </script>
+    <script>
+        /**
+         * @function propiedades
+         * @description Muestra u oculta la sección de propiedades.
+         */
+        function propiedades() {
+            var propiedadesDiv = document.getElementById("propiedades");
+            if (propiedadesDiv.style.display === "none") {
+                propiedadesDiv.style.display = "block";
+            } else {
+                propiedadesDiv.style.display = "none";
+            }
+        }
+    </script>
+    <script>
+        /**
+         * @function utilidades
+         * @description Muestra u oculta la sección de utilidades.
+         */
+        function utilidades() {
+            var utilidadesDiv = document.getElementById("utilidades");
+            if (utilidadesDiv.style.display === "none") {
+                utilidadesDiv.style.display = "block";
+            } else {
+                utilidadesDiv.style.display = "none";
+            }
+        }
+    </script>
+</head>
+
+<body>
+    <header>
+        <img id="logo" src="imagenes/logo.png" alt="logo de la pagina del tfg" width="50" height="50">
+
+        <h1 id="SN_principal">SEMIGRUPOS NUMÉRICOS</h1>
+
+        <ul>
+            <li><a href="index.html">Inicio</a></li>
+            <li><a href="visionmatematica.html">Visión matemática</a></li>
+            <li><a href="visioninformatica.html">Visión informática</a></li>
+            <li><a href="utilidades.html">Utilidades</a></li>
+            <li><a href="informacion.html">Información</a></li>
+            <li><a href="experiencias.html">Experiencias</a></li>
+        </ul>
+
+    </header>
+    <main>
+        <section>
+            <nav class="sidebar">
+                <ul>
+                    <li><a href="automatas.html">Automatas</a></li>
+                    <li><a href="seguridad.html">Seguridad</a></li>
+                    <li><a href="mochila.html">Mochila</a></li>
+                    <li><a href="generoFijo.html">Género Fijo</a></li>
+                    <li><a href="numeroFrobFijo.html">Número Frobenius Fijo</a></li>
+                    <li><a href="generoMulti.html">Género y Multiplicidad Fijos</a></li>
+                </ul>
+            </nav>
+        </section>
+
+        <section id="sH">
+            <h2 id="SH">PROBLEMA DE LA MOCHILA</h2>
+            <p>Dado un conjunto de números enteros no negativos primos relativos entre sí, <span class="form-peque">
+                    𝐴
+                    =
+                    {
+                    𝑎
+                    1
+                    ,
+                    𝑎
+                    2
+                    ,
+                    …
+                    ,
+                    𝑎
+                    𝑘
+                    }
+                </span>, el problema de la mochila consiste en determinar la combinación óptima de elementos del
+                conjunto que
+                maximiza una capacidad dada, como el peso o el valor total de la mochila. En este caso, el conjunto se
+                tratará como
+                un semigrupo numérico, y la resolución se basará en identificar las combinaciones lineales no negativas
+                de los
+                elementos que se
+                ajustan mejor a la capacidad establecida.</p>
+            <button onclick="propiedades()">Propiedades</button>
+            <div id="propiedades" style="display: none;">
+                <p id="text"><span class="punto"></span><strong>Uso de semigrupos numéricos en optimización:</strong>
+                    permite resolver problemas de optimización como encontrar la combinación óptima de elementos para
+                    maximizar una
+                    capacidad dada, como peso o valor.</p>
+                <p id="text"><span class="punto"></span><strong>Capacidad de identificar combinaciones
+                        múltiples:</strong>
+                    se basa en las combinaciones lineales no negativas de los elementos del semigrupo para encontrar
+                    soluciones
+                    factibles dentro
+                    de la restricción de capacidad.</p>
+                <p id="text"><span class="punto"></span><strong>Eficiencia en resolución con programación
+                        dinámica:</strong>
+                    utiliza una tabla dinámica para realizar el cálculo de forma eficiente, especialmente para
+                    capacidades pequeñas
+                    o medianas.</p>
+                <p id="text"><span class="punto"></span><strong>Escalabilidad con conjuntos complejos:</strong>
+                    aunque los conjuntos más grandes implican un aumento en la complejidad, los semigrupos numéricos
+                    permiten
+                    explorar soluciones mediante técnicas estructuradas.</p>
+            </div>
+            <button onclick="ejemplos()">Ejemplos</button>
+            <div id="ejemplo" style="display: none;">
+                <p id="text"><strong>Ejemplo:</strong> Si <span class="form-peque">\( A = \{5,7\} \)</span> y la
+                    capacidad de la
+                    mochila es 38, el programa buscará combinaciones de estos números que maximicen la capacidad. Una
+                    posible combinación sería:
+                    <span class="form-peque">\( (4 \times 7) + (2 \times 5) \)</span>, alcanzando un valor máximo de 38.
+                </p>
+
+                <p id="text"><strong>Ejemplo:</strong> Si <span class="form-peque">\( A = \{3,4,7\} \)</span> y la
+                    capacidad es 24,
+                    la combinacion utilizada sería: <span class="form-peque">\( (8 \times 3)
+                        \)</span>, logrando un valor máximo de 24.</p>
+
+                <p id="text"><strong>Ejemplo:</strong> Si <span class="form-peque">\( A = \{2,19,21\} \)</span> y la
+                    capacidad es 17,
+                    el programa encontrará que la mejor solución es: <span class="form-peque">\( (2 \times 8)
+                        \)</span>, con un valor máximo de 16 (menor dado que no existe ninguna combinación con ese
+                    semigrupo que nos de 17).</p>
+            </div>
+            <button onclick="utilidades()">Utilidades</button>
+            <div id="utilidades" style="display: none;">
+                <p id="text"><span class="punto"></span><strong>Optimización de recursos:</strong>
+                    nos permite resolver problemas relacionados con la distribución óptima de recursos, como maximizar
+                    el
+                    valor o uso de
+                    una capacidad limitada.</p>
+                <p id="text"><span class="punto"></span><strong>Aplicaciones educativas y matemáticas:</strong>
+                    facilita la enseñanza y el aprendizaje de conceptos como semigrupos numéricos, combinaciones
+                    lineales no negativas y
+                    programación dinámica.</p>
+                <p id="text"><span class="punto"></span><strong>Modelos aplicados en logística:</strong>
+                    sirve como base para analizar problemas reales en la logística, como el empaquetamiento y la
+                    organización de
+                    inventarios.</p>
+                <p id="text"><span class="punto"></span><strong>Análisis en ciencias de la computación:</strong>
+                    apoya la resolución de problemas en áreas como teoría de grafos, optimización combinatoria y diseño
+                    de
+                    algoritmos eficientes.</p>
+            </div>
+        </section>
+        <section id="sH">
+            <h2>Problema de la Mochila con Semigrupos Numéricos</h2>
+            <label for="inputNumeros">Elementos semigrupo separados por comas:</label>
+            <input type="text" id="inputNumeros" placeholder="Ej. 5,7,9">
+            <label for="capacidad">Capacidad mochila:</label>
+            <input type="number" id="capacidad" placeholder="Ej. 20">
+            <button onclick="calcular()">Calcular</button>
+            <button onclick="vaciarResultados()">Vaciar</button>
+        </section>
+
+        <section id="sH">
+            <p><strong>Resultados mochila:</strong> <span id="mochila"></span></p>
+            <p><strong>Combinación usada:</strong> <span id="combinacion"></span></p>
+            <p><strong>Tiempo de cálculo:</strong> <span id="tiempoCalculo"></span></p>
+        </section>
+
+
+    </main>
+
+    <footer id="f1"><a id="e1" href="documentocontacto.html">Documento de
+            contacto</a>---------------------------------------------------------------------
+        <a id="e1" href="documentacion.pdf">documentacion.pdf</a>
+    </footer>
+</body>
+
+</html>

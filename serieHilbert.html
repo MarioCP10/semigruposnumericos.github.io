@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Serie de Hilbert</title>
+    <link rel="stylesheet" type="text/css" href="serieHilbert.css" />
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script type="text/javascript" id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+        </script>
+    <script>
+        /**
+         * @function mcd
+         * @description Calcula el máximo común divisor (MCD) de dos números usando Euclides.
+         * @param {number} a – Primer operando (mayor o igual a 0)
+         * @param {number} b – Segundo operando (mayor o igual a 0)
+         * @returns {number} – El MCD de a y b.
+         */
+        function mcd(a, b) {
+            while (b !== 0) {
+                let temp = b;
+                b = a % b;
+                a = temp;
+            }
+            return a;
+        }
+
+        /**
+         * @function reducemcd
+         * @description Calcula el MCD de todos los elementos de un array.
+         * @param {number[]} arr – Array de enteros positivos.
+         * @returns {number} – MCD de todos los elementos.
+         */
+        function reducemcd(arr) {
+            return arr.reduce((a, b) => mcd(a, b));
+        }
+
+        /**
+         * @function formaExpandida
+         * @description Genera los primeros términos de la forma expandida de Hilbert para S.
+         * @param {number[]} S – Conjunto de generadores.
+         * @param {number} [numTerminos=20] – Número de términos a producir.
+         * @returns {number[]} – Array ordenado con los primeros `numTerminos` términos.
+         */
+        function formaExpandida(S, numTerminos = 20) {
+            let terminos = new Set([0]);
+            let minS = Math.min(...S);
+
+            for (let i = 0; i < numTerminos * minS; i++) {
+                let nuevosTerminos = new Set();
+                terminos.forEach(t => {
+                    S.forEach(a => {
+                        if (t + a <= numTerminos * minS) {
+                            nuevosTerminos.add(t + a);
+                        }
+                    });
+                });
+                nuevosTerminos.forEach(t => terminos.add(t));
+            }
+
+            let resultado = Array.from(terminos).sort((a, b) => a - b).slice(0, numTerminos);
+            return resultado.join(", ") + " ...";
+        }
+
+        /**
+         * @function nFrob
+         * @description Calcula el número de Frobenius de un conjunto S de generadores.
+         * @param {number[]} S – Conjunto de generadores (todos > 0).
+         * @returns {(number|string)} – Número de Frobenius, o –1 si S contiene 1,
+         *                              o mensaje de error si mcd(S)!=1 o |S|<2.
+         */
+        function nFrob(S) {
+            if (S.includes(1)) {
+                return -1;
+            }
+
+            if (S.length < 2 || reducemcd(S) !== 1) {
+                return "No se puede calcular";
+            }
+
+            S.sort((a, b) => a - b);
+            let valorMax = S[S.length - 1] * S[S.length - 2];
+            let alcanzable = Array(valorMax + 1).fill(false);
+            alcanzable[0] = true;
+
+            for (let i = 1; i <= valorMax; i++) {
+                for (let a of S) {
+                    if (i - a >= 0 && alcanzable[i - a]) {
+                        alcanzable[i] = true;
+                        break;
+                    }
+                }
+            }
+
+            for (let i = valorMax; i >= 0; i--) {
+                if (!alcanzable[i]) {
+                    return i;
+                }
+            }
+            return "No se puede calcular";
+        }
+
+        /**
+         * @function expansionSemigrupo
+         * @description Expande S hasta un límite usando búsqueda en anchura.
+         * @param {number[]} S – Conjunto de generadores.
+         * @param {number} limite – Valor máximo a incluir.
+         * @returns {number[]} – Todos los enteros alcanzables ≤ límite.
+         */
+        function expansionSemigrupo(S, limite) {
+            let terminos = new Set([0]);
+            let cola = [0];
+            while (cola.length > 0) {
+                let t = cola.shift();
+                for (let a of S) {
+                    let nuevoTermino = t + a;
+                    if (nuevoTermino <= limite && !terminos.has(nuevoTermino)) {
+                        terminos.add(nuevoTermino);
+                        cola.push(nuevoTermino);
+                    }
+                }
+            }
+            return Array.from(terminos);
+        }
+
+        /**
+         * @function formaCerrada
+         * @description Construye la serie cerrada de Hilbert usando el conjunto de Apéry.
+         * @param {number[]} S – Generadores (mcd=1).
+         * @returns {string} – Expresión LaTeX de la forma cerrada.
+         */
+        function formaCerrada(S) {
+            //Caso especial: si S incluye el 1, entonces S = ℕ₀.
+            if (S.includes(1)) {
+                return "\\( \\frac{1}{1-x} \\)";
+            }
+
+            let m = Math.min(...S);
+
+            let nFrobenius = nFrob(S);
+            let conductor = (typeof nFrobenius === "number" && nFrobenius !== -1) ? nFrobenius + 1 : m * 10;
+            let limite = conductor + m;  //Se considera un límite de expansión
+
+            let semigrupo = expansionSemigrupo(S, limite);
+
+            //Cálculo de los conjuntos de Apéry
+            let apery = new Array(m).fill(Infinity);
+            semigrupo.forEach(s => {
+                let r = s % m;
+                if (s < apery[r]) {
+                    apery[r] = s;
+                }
+            });
+
+            let numerador = apery.map(s => `x^{${s}}`).join(" + ");
+            let denominador = `(1 - x^{${m}})`;
+
+            return "\\( \\frac{" + numerador + "}{" + denominador + "} \\)";
+        }
+
+        /**
+         * @function calcular
+         * @description Lee input, valida semigrupo, calcula serie expandida, cerrada y Frobenius.
+         */
+        function calcular() {
+            let entrada = document.getElementById("inputNumeros").value;
+            let numeros = entrada.split(",").map(n => parseInt(n.trim())).filter(n => !isNaN(n) && n > 0);
+            let partes = entrada.split(",").map(s => s.trim());
+
+            for (let p of partes) {
+                if (!/^\d+$/.test(p)) {
+                    alert("Solo se permiten números enteros no negativos.");
+                    vaciarResultados();
+                    return;
+                }
+            }
+
+            //Se debe de comprobar que cumple el criterio de semigrupo numérico
+            if (reducemcd(numeros) !== 1) {
+                alert("El conjunto de números que has metido no es un semigrupo numérico.");
+                vaciarResultados();
+                return;
+            }
+
+            let inicio = performance.now();
+            let hilbertExpandida = formaExpandida(numeros);
+            let hilbertCerrada = formaCerrada(numeros);
+            let frobeniusNum = nFrob(numeros);
+            let fin = performance.now();
+
+            document.getElementById("resultadoExpandida").innerText = hilbertExpandida;
+            document.getElementById("resultadoCerrada").innerHTML = hilbertCerrada;
+            MathJax.typesetPromise(); //Se renderiza la notación hecha en LaTeX.
+            document.getElementById("resultadoFrobenius").innerText = frobeniusNum;
+            document.getElementById("tiempoCalculo").innerText = ((fin - inicio) / 1000).toFixed(6) + " segundos";
+        }
+
+        /**
+         * @function vaciarResultados
+         * @description Limpia todos los campos de resultado e input.
+         */
+        function vaciarResultados() {
+            document.getElementById("resultadoExpandida").innerText = "";
+            document.getElementById("resultadoCerrada").innerText = "";
+            document.getElementById("resultadoFrobenius").innerText = "";
+            document.getElementById("tiempoCalculo").innerText = "";
+            document.getElementById("inputNumeros").value = "";
+        }
+    </script>
+
+    <script>
+        /**
+         * @function ejemplos
+         * @description Muestra u oculta la sección de ejemplos.
+         */
+        function ejemplos() {
+            var ejemplosDiv = document.getElementById("ejemplo");
+            if (ejemplosDiv.style.display === "none") {
+                ejemplosDiv.style.display = "block";
+            } else {
+                ejemplosDiv.style.display = "none";
+            }
+        }
+    </script>
+    <script>
+        /**
+         * @function propiedades
+         * @description Muestra u oculta la sección de propiedades.
+         */
+        function propiedades() {
+            var propiedadesDiv = document.getElementById("propiedades");
+            if (propiedadesDiv.style.display === "none") {
+                propiedadesDiv.style.display = "block";
+            } else {
+                propiedadesDiv.style.display = "none";
+            }
+        }
+    </script>
+    <script>
+        /**
+         * @function utilidades
+         * @description Muestra u oculta la sección de utilidades.
+         */
+        function utilidades() {
+            var utilidadesDiv = document.getElementById("utilidades");
+            if (utilidadesDiv.style.display === "none") {
+                utilidadesDiv.style.display = "block";
+            } else {
+                utilidadesDiv.style.display = "none";
+            }
+        }
+    </script>
+</head>
+
+<body>
+    <header>
+        <img id="logo" src="imagenes/logo.png" alt="logo de la pagina del tfg" width="50" height="50">
+
+        <h1 id="SN_principal">SEMIGRUPOS NUMÉRICOS</h1>
+
+        <ul>
+            <li><a href="index.html">Inicio</a></li>
+            <li><a href="visionmatematica.html">Visión matemática</a></li>
+            <li><a href="visioninformatica.html">Visión informática</a></li>
+            <li><a href="utilidades.html">Utilidades</a></li>
+            <li><a href="informacion.html">Información</a></li>
+            <li><a href="experiencias.html">Experiencias</a></li>
+        </ul>
+
+    </header>
+    <main>
+        <section>
+            <nav class="sidebar">
+                <ul>
+                    <li><a href="nFrobenius.html">Número de Frobenius</a></li>
+                    <li><a href="genero.html">Género</a></li>
+                    <li><a href="conductor.html">Conductor</a></li>
+                    <li><a href="serieHilbert.html">Serie de Hilbert</a></li>
+                    <li><a href="esminimal.html">Sistema Minimal</a></li>
+                    <li><a href="conjuntosApery.html">Conjuntos de Apéry</a></li>
+                    <li><a href="sistemaInfinito.html">Sistema Minimal Infinito</a></li>
+                </ul>
+            </nav>
+        </section>
+
+        <section id="sH">
+            <h2 id="SH">SERIE DE HILBERT</h2>
+            <p>La serie de Hilbert de un semigrupo numérico es una herramienta algebráica que condensa el crecimiento de
+                los elementos
+                del semigrupo numérico en una serie formal. Esto es muy usado en el álgebra conmutativa y teoría de
+                invariantes para
+                estudiar las estructuras de crecimiento.</p>
+            <p>Sea <strong>S</strong> un semigrupo numérico el cual es subconjunto de los enteros no negativos
+                \(\mathbb{N}\)
+                cerrado
+                bajo suma y con un número finito de generadores <span class="form-peque">\(A = \{a_1, a_2, \ldots,
+                    a_k\}\)</span>. La serie de Hilbert
+                de
+                <strong>S</strong> es una serie la cual cuenta cuántos elementos
+                del semigrupo hay en cada grado, mostrando la distribución de los números en <strong>S</strong>. La
+                serie formal es:
+            </p>
+            <p>$$ H_S(t) = \sum_{s \in S} t^s $$</p>
+            <button onclick="propiedades()">Propiedades</button>
+            <div id="propiedades" style="display: none;">
+                <p id="text1">
+                    <span class="punto"></span>
+                    <strong>Forma cerrada:</strong> utilizando las propiedades
+                    particulares de los semigrupos numéricos, se puede obtener una
+                    forma cerrada alternativa basada en el conjunto de Apéry.
+                </p>
+                <p>
+                    <span class="form-peque">\( H_S(t)=\frac{\displaystyle \sum_{r=0}^{m-1} t^{w_r}}{1-t^m} \)</span>
+                </p>
+                <p id="text1">
+                    <span class="punto"></span>
+                    <strong>Conexión con el anillo del semigrupo:</strong> en álgebra conmutativa,
+                    <span class="form-peque">\( H_S(t) \)</span> coincide con la serie de Hilbert del anillo de
+                    semigrupo <span class="form-peque">\( K[S] \)</span>,
+                    el cual describe la estructura del crecimiento del álgebra que tiene asociada.
+                </p>
+                <p id="text1">
+                    <span class="punto"></span>
+                    <strong>Número de Frobenius:</strong> para los semigrupos con dos
+                    generadores, la serie permite identificar el número de Frobenius
+                    <span class="form-peque">\( F(S) \)</span>, que es el mayor número que no pertenece a <span
+                        class="form-peque">\( S \)</span>.
+                </p>
+            </div>
+
+            <button onclick="ejemplos()">Ejemplos</button>
+            <div id="ejemplo" style="display: none;">
+                <p id="text">
+                    <strong>Ejemplo:</strong> Si <span class="form-peque">\( A = \{2,7\} \)</span>,
+                    tendríamos como forma expandida de la serie
+                    <span class="form-peque">\( x^0 + x^2 + x^4 + x^6 + x^7 + x^8 + x^9 + x^{10} + x^{11} + x^{12} +
+                        \ldots
+                        \)</span>.
+                </p>
+                <p>
+                    Como fórmula cerrada (mediante el conjunto de Apéry) obtendríamos
+                    \( \frac{1+x^7}{1-x^2} \).
+                </p>
+                <p id="text">
+                    <strong>Ejemplo:</strong> Si <span class="form-peque">\( A = \{3,7,8\} \)</span>,
+                    tendríamos como forma expandida de la serie
+                    <span class="form-peque">\( x^0 + x^3 + x^6 + x^7 + x^8 + x^9 + x^{10} + x^{11} + \ldots \)</span>.
+                </p>
+                <p>
+                    Como fórmula cerrada (mediante el conjunto de Apéry) obtendríamos
+                    \( \frac{1+x^7+x^8}{1-x^3} \).
+                </p>
+                <p id="text">
+                    <strong>Ejemplo:</strong> Si <span class="form-peque">\( A = \{6,7,10,11\} \)</span>,
+                    tendríamos como forma expandida de la serie
+                    <span class="form-peque">
+                        \( x^0 + x^6 + x^7 + x^{10} + x^{11} + x^{12} + x^{13} + \ldots \)
+                    </span>.
+                </p>
+                <p>
+                    Como fórmula cerrada (mediante el conjunto de Apéry) obtendríamos
+                    \( \frac{1+x^7+x^{10}+x^{11}+x^{14}+x^{21}}{1-x^6} \).
+                </p>
+            </div>
+            <button onclick="utilidades()">Utilidades</button>
+            <div id="utilidades" style="display: none;">
+                <p id="text1">
+                    <span class="punto"></span>
+                    <strong>Geometría algebraica y álgebra conmutativa:</strong>
+                    Las series de Hilbert se emplean en el estudio de variedades algebraicas, en el cálculo de
+                    multiplicidades, en
+                    anillos graduados y en la resolución de singularidades. Gracias a sus representaciones (tanto la
+                    forma expandida
+                    como la cerrada mediante el conjunto de Apéry), se pueden extraer invariantes y clasificar objetos
+                    geométricos
+                    de manera eficiente.
+                </p>
+                <p id="text1">
+                    <span class="punto"></span>
+                    <strong>Teoría de invariantes y representaciones:</strong>
+                    Son muy útiles para determinar la dimensión y el crecimiento de espacios de invariantes bajo la
+                    acción de grupos
+                    algebraicos, además de facilitar el estudio de representaciones de álgebras y la clasificación de
+                    módulos
+                    simples y proyectivos.
+                </p>
+                <p id="text1">
+                    <span class="punto"></span>
+                    <strong>Algoritmos computacionales:</strong>
+                    Tanto la forma expandida como la cerrada de la serie de Hilbert se utilizan en geometría
+                    computacional y en
+                    algoritmos para analizar la complejidad de problemas combinatorios, mejorar la eficiencia y diseñar
+                    métodos
+                    optimizados para el manejo de datos geométricos.
+                </p>
+            </div>
+        </section>
+
+        <section id="sH">
+            <h2>Cálculo de la Serie de Hilbert</h2>
+            <label for="inputNumeros">Introduce los elementos del semigrupo separados por comas:</label>
+            <input type="text" id="inputNumeros" placeholder="Ej. 8,9,13,28" required>
+            <button onclick="calcular()">Calcular</button>
+            <button onclick="vaciarResultados()">Vaciar</button>
+        </section>
+
+        <section id="sH">
+            <h3>Resultados:</h3>
+            <p><strong>Serie de Hilbert (expandida):</strong> <span id="resultadoExpandida"></span></p>
+            <p><strong>Serie de Hilbert (cerrada):</strong> <span id="resultadoCerrada"></span></p>
+            <p><strong>Número de Frobenius:</strong> <span id="resultadoFrobenius"></span></p>
+            <p><strong>Tiempo de cálculo:</strong> <span id="tiempoCalculo"></span></p>
+        </section>
+
+    </main>
+
+    <footer id="f1"><a id="e1" href="documentocontacto.html">Documento de
+            contacto</a>---------------------------------------------------------------------
+        <a id="e1" href="documentacion.pdf">documentacion.pdf</a>
+    </footer>
+</body>
+
+</html>

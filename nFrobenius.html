@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Número de Frobenius</title>
+    <link rel="stylesheet" type="text/css" href="nFrobenius.css" />
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script type="text/javascript" id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+        </script>
+    <script>
+        /**
+         * @function mcd
+         * @description Calcula el máximo común divisor (MCD) de dos números usando Euclides.
+         * @param {number} a – Primer operando (mayor o igual a 0)
+         * @param {number} b – Segundo operando (mayor o igual a 0)
+         * @returns {number} – El MCD de a y b.
+         */
+        function mcd(a, b) {
+            while (b !== 0) {
+                let temp = b;
+                b = a % b;
+                a = temp;
+            }
+            return a;
+        }
+
+        /**
+         * @function reducemcd
+         * @description Calcula el MCD de todos los elementos de un array.
+         * @param {number[]} arr – Array de enteros positivos.
+         * @returns {number} – MCD de todos los elementos.
+         */
+        function reducemcd(arr) {
+            return arr.reduce((a, b) => mcd(a, b));
+        }
+
+        /**
+         * @function nFrob
+         * @description Calcula el número de Frobenius de un conjunto S de generadores.
+         * @param {number[]} S – Conjunto de generadores (todos > 0).
+         * @returns {(number|string)} – Número de Frobenius, o –1 si S contiene 1,
+         *                              o mensaje de error si mcd(S)!=1 o |S|<2.
+        */
+        function nFrob(S) {
+            if (S.includes(1)) {
+                return -1;
+            }
+
+            if (S.length < 2 || reducemcd(S) !== 1) {
+                return "No se puede calcular";
+            }
+
+            S.sort((a, b) => a - b);
+            let valorMax = S[S.length - 1] * S[S.length - 2];
+            let alcanzable = Array(valorMax + 1).fill(false);
+            alcanzable[0] = true;
+
+            for (let i = 1; i <= valorMax; i++) {
+                for (let a of S) {
+                    if (i - a >= 0 && alcanzable[i - a]) {
+                        alcanzable[i] = true;
+                        break;
+                    }
+                }
+            }
+
+            for (let i = valorMax; i >= 0; i--) {
+                if (!alcanzable[i]) {
+                    return i;
+                }
+            }
+            return "No se puede calcular";
+        }
+
+        /**
+         * @function calcular
+         * @description Lee la entrada del usuario, valida, mide tiempo y muestra resultado.
+         */
+        function calcular() {
+            let entrada = document.getElementById("inputNumeros").value;
+            let numeros = entrada.split(",").map(n => parseInt(n.trim())).filter(n => !isNaN(n) && n > 0);
+            let partes = entrada.split(",").map(s => s.trim());
+
+            for (let p of partes) {
+                if (!/^\d+$/.test(p)) {
+                    alert("Solo se permiten números enteros no negativos.");
+                    vaciarResultados();
+                    return;
+                }
+            }
+
+            //Se debe de comprobar que cumple el criterio de semigrupo numérico
+            if (reducemcd(numeros) !== 1) {
+                alert("El conjunto de números que has metido no es un semigrupo numérico.");
+                vaciarResultados();
+                return;
+            }
+
+            let inicio = performance.now();
+            let numFroben = nFrob(numeros);
+            let fin = performance.now();
+
+            document.getElementById("resultadoFrobenius").innerText = numFroben;
+            document.getElementById("tiempoCalculo").innerText = ((fin - inicio) / 1000).toFixed(6) + " segundos";
+        }
+
+        /**
+         * @function vaciarResultados
+         * @description Limpia el resultado y el campo de entrada.
+         */
+        function vaciarResultados() {
+            document.getElementById("resultadoFrobenius").innerText = "";
+            document.getElementById("tiempoCalculo").innerText = "";
+            document.getElementById("inputNumeros").value = "";
+        }
+    </script>
+    <script>
+        /**
+         * @function ejemplos
+         * @description Muestra u oculta la sección de ejemplos.
+         */
+        function ejemplos() {
+            var ejemplosDiv = document.getElementById("ejemplo");
+            if (ejemplosDiv.style.display === "none") {
+                ejemplosDiv.style.display = "block";
+            } else {
+                ejemplosDiv.style.display = "none";
+            }
+        }
+    </script>
+    <script>
+        /**
+         * @function propiedades
+         * @description Muestra u oculta la sección de propiedades.
+         */
+        function propiedades() {
+            var propiedadesDiv = document.getElementById("propiedades");
+            if (propiedadesDiv.style.display === "none") {
+                propiedadesDiv.style.display = "block";
+            } else {
+                propiedadesDiv.style.display = "none";
+            }
+        }
+    </script>
+    <script>
+        /**
+         * @function utilidades
+         * @description Muestra u oculta la sección de utilidades.
+         */
+        function utilidades() {
+            var utilidadesDiv = document.getElementById("utilidades");
+            if (utilidadesDiv.style.display === "none") {
+                utilidadesDiv.style.display = "block";
+            } else {
+                utilidadesDiv.style.display = "none";
+            }
+        }
+    </script>
+</head>
+
+<body>
+    <header>
+        <img id="logo" src="imagenes/logo.png" alt="logo de la pagina del tfg" width="50" height="50">
+
+        <h1 id="SN_principal">SEMIGRUPOS NUMÉRICOS</h1>
+
+        <ul>
+            <li><a href="index.html">Inicio</a></li>
+            <li><a href="visionmatematica.html">Visión matemática</a></li>
+            <li><a href="visioninformatica.html">Visión informática</a></li>
+            <li><a href="utilidades.html">Utilidades</a></li>
+            <li><a href="informacion.html">Información</a></li>
+            <li><a href="experiencias.html">Experiencias</a></li>
+        </ul>
+
+    </header>
+    <main>
+        <section>
+            <nav class="sidebar">
+                <ul>
+                    <li><a href="nFrobenius.html">Número de Frobenius</a></li>
+                    <li><a href="genero.html">Género</a></li>
+                    <li><a href="conductor.html">Conductor</a></li>
+                    <li><a href="serieHilbert.html">Serie de Hilbert</a></li>
+                    <li><a href="esminimal.html">Sistema Minimal</a></li>
+                    <li><a href="conjuntosApery.html">Conjuntos de Apéry</a></li>
+                    <li><a href="sistemaInfinito.html">Sistema Minimal Infinito</a></li>
+                </ul>
+            </nav>
+        </section>
+
+        <section id="sH">
+            <h2 id="SH">NÚMERO DE FROBENIUS</h2>
+            <p>Dado un conjunto de números enteros no negativos primos relativos entre sí, <span class="form-peque">\( A
+                    =
+                    \{a_1, a_2, \ldots, a_k\}
+                    \)</span>, el
+                problema
+                de Frobenius se usa para determinar cuál es el número más grande que no puede expresarse como una
+                combinación lineal
+                de
+                elementos del conjunto.
+            </p>
+            <button onclick="propiedades()">Propiedades</button>
+            <div id="propiedades" style="display: none;">
+                <p id="text"><span class="punto"></span><strong>Número único para conjuntos coprimos:
+                    </strong>es un número único para un conjunto dado de números coprimos</p>
+                <p id="text"><span class="punto"></span><strong>Crecimiento del número con el tamaño del conjunto:
+                    </strong>aumenta a medida que los elementos del conjunto aumentan en tamaño.</p>
+                <p id="text">
+                    <span class="punto"></span>
+                    <strong>Cálculo sencillo con dos números del conjunto:</strong>
+                    si tenemos 2 números, el número de Frobenius es
+                    <span class="form-peque">\( F(a,b)=ab-a-b \)</span> donde el máximo común divisor debe de ser 1.
+                </p>
+                <p id="text"><span class="punto"></span><strong>Complejidad computacional con más de dos números:
+                    </strong>en el caso de tener más de dos números, el cálculo de este número puede llegar a ser
+                    costoso en términos computacionales</p>
+            </div>
+            <button onclick="ejemplos()">Ejemplos</button>
+            <div id="ejemplo" style="display: none;">
+                <p id="text"><strong>Ejemplo:</strong> Si <span class="form-peque">\( A = \{5,7\} \)</span>, los números
+                    que podrán formarse con
+                    combinaciones no
+                    negativas de 5 y 7 son: 0, 5, 7, 10, 12, 14, 15, 17, 19, 20, 21, \(\ldots\)
+                    El mayor número que no se puede generar es 23 dado que no hay ninguna combinación lineal que pueda
+                    generarlo y
+                    siendo esta la mayor, es decir, del 24 en adelante todos los números pueden ser generados.
+                </p>
+                <p id="text"><strong>Ejemplo:</strong> Si <span class="form-peque">\( A = \{3,4,7\} \)</span>, los
+                    números que podrán formarse con
+                    combinaciones no
+                    negativas de 3, 4 y 7 son: 0, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, \(\ldots\)
+                    El mayor número que no se puede generar es 5 dado que no hay ninguna combinación lineal que pueda
+                    generarlo y
+                    siendo esta la mayor, es decir, del 6 en adelante todos los números pueden ser generados.
+                </p>
+                <p id="text"><strong>Ejemplo:</strong> Si <span class="form-peque">\( A = \{5,7,9,11\} \)</span>, los
+                    números que podrán formarse con
+                    combinaciones
+                    no
+                    negativas de 5, 7, 9 y 11 son: 0, 5, 7, 9, 10, 11, 12, 14, 15, 16, 17, 18, 19, 20, \(\ldots\)
+                    El mayor número que no se puede generar es 13 dado que no hay ninguna combinación lineal que pueda
+                    generarlo y
+                    siendo esta la mayor, es decir, del 14 en adelante todos los números pueden ser generados.
+                </p>
+            </div>
+            <button onclick="utilidades()">Utilidades</button>
+            <div id="utilidades" style="display: none;">
+                <p id="text"><span class="punto"></span><strong>Matemática discreta y combinatoria:
+                    </strong>se utiliza en problemas de conteo y particiones de números.
+                </p>
+                <p id="text"><span class="punto"></span><strong>Optimización y teoría de juegos:
+                    </strong>para problemas de minimización de residuos o en casos donde es necesaria maximizar el uso
+                    de los recursos.
+                </p>
+                <p id="text"><span class="punto"></span><strong>Teoría de la moneda:
+                    </strong>el problema del “cambio de monedas” donde la finalidad es comprobar cuál es el mayor montón
+                    que no se puede obtener con
+                    denominaciones concretas.
+                </p>
+                <p id="text"><span class="punto"></span><strong>Criptografía y seguridad computacional:
+                    </strong>solo algunas variantes del problema pueden relacionarse con problemas complejos de la
+                    aritmética modular.</p>
+            </div>
+        </section>
+        <section id="sH">
+            <h2>Cálculo del número de Frobenius</h2>
+            <label for="inputNumeros">Introduce los elementos del semigrupo separados por comas:</label>
+            <input type="text" id="inputNumeros" placeholder="Ej. 4,5" required>
+            <button onclick="calcular()">Calcular</button>
+            <button onclick="vaciarResultados()">Vaciar</button>
+        </section>
+
+        <section id="sH">
+            <h3>Resultados:</h3>
+            <p><strong>Número de Frobenius:</strong> <span id="resultadoFrobenius"></span></p>
+            <p><strong>Tiempo de cálculo:</strong> <span id="tiempoCalculo"></span></p>
+        </section>
+
+    </main>
+
+    <footer id="f1"><a id="e1" href="documentocontacto.html">Documento de
+            contacto</a>---------------------------------------------------------------------
+        <a id="e1" href="documentacion.pdf">documentacion.pdf</a>
+    </footer>
+</body>
+
+</html>

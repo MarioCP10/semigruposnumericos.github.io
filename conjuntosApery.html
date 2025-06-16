@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conjuntos de Apéry</title>
+    <link rel="stylesheet" type="text/css" href="conjuntosApery.css" />
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script type="text/javascript" id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+        </script>
+    <script>
+        /**
+         * @function mcd
+         * @description Calcula el máximo común divisor (MCD) de dos números usando Euclides.
+         * @param {number} a – Primer operando (mayor o igual a 0)
+         * @param {number} b – Segundo operando (mayor o igual a 0)
+         * @returns {number} – El MCD de a y b.
+         */
+        function mcd(a, b) {
+            while (b !== 0) {
+                let temp = b;
+                b = a % b;
+                a = temp;
+            }
+            return a;
+        }
+
+        /**
+         * @function reducemcd
+         * @description Calcula el MCD de todos los elementos de un array.
+         * @param {number[]} arr – Array de enteros positivos.
+         * @returns {number} – MCD de todos los elementos.
+         */
+        function reducemcd(arr) {
+            return arr.reduce((a, b) => mcd(a, b));
+        }
+
+        /**
+         * @function formaExpandida
+         * @description Genera primeros términos de la forma expandida de Hilbert para S.
+         * @param {number[]} S – Conjunto de generadores (mcd=1).
+         * @param {number} [num_terms=20] – Factor de límite: se generan hasta num_terms·min(S).
+         * @returns {number[]} – Array ordenado con todos los enteros alcanzables menores o iguales al límite.
+         */
+        function formaExpandida(S, num_terms = 20) {
+            let terms = new Set([0]);
+            let minS = Math.min(...S);
+
+            for (let i = 0; i < num_terms * minS; i++) {
+                let nuevosTerminos = new Set();
+                terms.forEach(t => {
+                    S.forEach(a => {
+                        if (t + a <= num_terms * minS) {
+                            nuevosTerminos.add(t + a);
+                        }
+                    });
+                });
+                nuevosTerminos.forEach(t => terms.add(t));
+            }
+
+            let result = Array.from(terms).sort((a, b) => a - b);
+            return result;
+        }
+
+        /**
+         * @function calculaConjuntoApery
+         * @description Lee S desde el input, valida semigrupo y calcula su conjunto de Apéry.
+         * @sideeffects – Muestra en pantalla el conjunto {Ap | Mod=min{s∈⟨S⟩:s≡r mod d}} y residuos.
+         */
+        function calculaConjuntoApery() {
+            let entrada = document.getElementById("inputNumeros").value;
+            let numeros = entrada.split(",").map(n => parseInt(n.trim())).filter(n => !isNaN(n) && n > 0);
+            let d = Math.min(...numeros);
+            let partes = entrada.split(",").map(s => s.trim());
+
+            for (let p of partes) {
+                if (!/^\d+$/.test(p) || isNaN(d) || d <= 0) {
+                    alert("Solo se permiten números enteros no negativos.");
+                    vaciarResultados();
+                    return;
+                }
+            }
+
+            //Se debe de comprobar que cumple el criterio de semigrupo numérico
+            if (reducemcd(numeros) !== 1) {
+                alert("El conjunto de números que has metido no es un semigrupo numérico.");
+                vaciarResultados();
+                return;
+            }
+
+            let serieExpandida = formaExpandida(numeros);
+            let conjuntoApery = [];
+            let modulos = [];
+
+            for (let r = 0; r < d; r++) {
+                let min = serieExpandida.find(s => s % d === r);
+                conjuntoApery.push(min);
+                modulos.push(`Residuo ${r}: ${min}`);
+            }
+
+            document.getElementById("Ap").innerText = `Conjunto de Apery para d=${d}: {${conjuntoApery.join(", ")}}`;
+            document.getElementById("Modulos").innerText = modulos.join("\n");
+        }
+
+        /**
+         * @function vaciarResultados
+         * @description Limpia los campos de entrada y de salida.
+         */
+        function vaciarResultados() {
+            document.getElementById("Ap").innerText = "";
+            document.getElementById("Modulos").innerText = "";
+            document.getElementById("inputNumeros").value = "";
+        }
+    </script>
+    <script>
+        /**
+         * @function ejemplos
+         * @description Muestra u oculta la sección de ejemplos.
+         */
+        function ejemplos() {
+            var ejemplosDiv = document.getElementById("ejemplo");
+            if (ejemplosDiv.style.display === "none") {
+                ejemplosDiv.style.display = "block";
+            } else {
+                ejemplosDiv.style.display = "none";
+            }
+        }
+    </script>
+    <script>
+        /**
+         * @function propiedades
+         * @description Muestra u oculta la sección de propiedades.
+         */
+        function propiedades() {
+            var propiedadesDiv = document.getElementById("propiedades");
+            if (propiedadesDiv.style.display === "none") {
+                propiedadesDiv.style.display = "block";
+            } else {
+                propiedadesDiv.style.display = "none";
+            }
+        }
+    </script>
+    <script>
+        /**
+         * @function utilidades
+         * @description Muestra u oculta la sección de utilidades.
+         */
+        function utilidades() {
+            var utilidadesDiv = document.getElementById("utilidades");
+            if (utilidadesDiv.style.display === "none") {
+                utilidadesDiv.style.display = "block";
+            } else {
+                utilidadesDiv.style.display = "none";
+            }
+        }
+    </script>
+</head>
+
+<body>
+    <header>
+        <img id="logo" src="imagenes/logo.png" alt="logo de la pagina del tfg" width="50" height="50">
+        <h1 id="SN_principal">SEMIGRUPOS NUMÉRICOS</h1>
+        <ul>
+            <li><a href="index.html">Inicio</a></li>
+            <li><a href="visionmatematica.html">Visión matemática</a></li>
+            <li><a href="visioninformatica.html">Visión informática</a></li>
+            <li><a href="utilidades.html">Utilidades</a></li>
+            <li><a href="informacion.html">Información</a></li>
+            <li><a href="experiencias.html">Experiencias</a></li>
+        </ul>
+    </header>
+
+    <main>
+        <section>
+            <nav class="sidebar">
+                <ul>
+                    <li><a href="nFrobenius.html">Número de Frobenius</a></li>
+                    <li><a href="genero.html">Género</a></li>
+                    <li><a href="conductor.html">Conductor</a></li>
+                    <li><a href="serieHilbert.html">Serie de Hilbert</a></li>
+                    <li><a href="esminimal.html">Sistema Minimal</a></li>
+                    <li><a href="conjuntosApery.html">Conjuntos de Apéry</a></li>
+                    <li><a href="sistemaInfinito.html">Sistema Minimal Infinito</a></li>
+                </ul>
+            </nav>
+        </section>
+
+        <section id="sH">
+            <h2 id="GN">CONJUNTOS DE APÉRY</h2>
+            <p>Un conjunto de Apéry de un semigrupo numérico <strong>S</strong> respecto a un elemento n ∈
+                <strong>S</strong> no nulo,
+                denotado como
+                Ap(<strong>S</strong>,n), es el
+                conjunto de los elementos más pequeños de <strong>S</strong> en cada clase de residuo módulo n. La
+                denotación viene dada
+                como:
+            </p>
+            <p>
+                \(\text{Ap}(S,n) = \{ s \in S \mid s - n \notin S \text{ y } s \equiv r \ (\text{mod} \ n) \
+                \text{para algún } r
+                \in \{0,1,\ldots,n-1\} \}\)
+            </p>
+            <p>Vemos que Ap(<strong>S</strong>,n) es un método que contiene los elementos más pequeños de S en cada
+                clase de
+                equivalencia módulo n.</p>
+            <button onclick="propiedades()">Propiedades</button>
+            <div id="propiedades" style="display: none;">
+                <p id="text"><span class="punto"></span><strong>Cardinalidad:
+                    </strong>|Ap(<strong>S</strong>,n)| = n, es decir, contiene exactamente n elementos.</p>
+                <p id="text"><span class="punto"></span><strong>Cierre bajo la suma con n:
+                    </strong>Si x ∈ Ap(<strong>S</strong>,n), entonces x+n ∈ S.</p>
+                <p id="text"><span class="punto"></span><strong>Representación de los elementos del semigrupo:
+                    </strong>cualquier elemento de <strong>S</strong> puede expresarse con la suma de un elemento de
+                    Ap(<strong>S</strong>,n) y un
+                    múltiplo de n.
+                </p>
+            </div>
+            <button onclick="ejemplos()">Ejemplos</button>
+            <div id="ejemplo" style="display: none;">
+
+                <p id="text"><strong>Ejemplo:</strong> Dado <span class="form-peque">\( S = \langle4,9\rangle \)</span>
+                    generado
+                    por 4 y 9. Si tomamos <span class="form-peque">\( n = 4 \)</span>, buscamos los
+                    elementos más pequeños de <strong>S</strong> en cada clase de residuo
+                    módulo 4:
+                </p>
+                <p id="text1"><span class="punto"></span>Residuo 0: 0 (el menor con 0 ≡ 0 mod 4).</p>
+                <p id="text1"><span class="punto"></span>Residuo 1: 9 (es el menor con 9 ≡ 1 mod 4).</p>
+                <p id="text1"><span class="punto"></span>Residuo 2: 18 (es el menor con 18 ≡ 2 mod 4).</p>
+                <p id="text1"><span class="punto"></span>Residuo 3: 27 (es el menor con 27 ≡ 3 mod 4).</p>
+                <p id="text">Vemos en consecuencia que <span class="form-peque">\( Ap(S, 4) = \{0, 9, 18, 27\} \)</span>
+                </p>
+
+                <p id="text"><strong>Ejemplo:</strong> Dado <span class="form-peque">\( S = \langle5,7,9\rangle
+                        \)</span> generado
+                    por 5, 7 y 9. Si tomamos <span class="form-peque">\( n = 5 \)</span>, buscamos
+                    los elementos más pequeños de <strong>S</strong> en cada clase de
+                    residuo módulo 5.
+                </p>
+                <p id="text1"><span class="punto"></span>Residuo 0: 0 (el menor con 0 ≡ 0 mod 5).</p>
+                <p id="text1"><span class="punto"></span>Residuo 1: 16 (es el menor con 16 ≡ 1 mod 5).</p>
+                <p id="text1"><span class="punto"></span>Residuo 2: 7 (es el menor con 7 ≡ 2 mod 5).</p>
+                <p id="text1"><span class="punto"></span>Residuo 3: 18 (es el menor con 18 ≡ 3 mod 5).</p>
+                <p id="text1"><span class="punto"></span>Residuo 4: 9 (es el menor con 9 ≡ 4 mod 5).</p>
+                <p id="text">Vemos en consecuencia que <span class="form-peque">\( Ap(S, 5) = \{0, 16, 7, 18, 9\}
+                        \)</span></p>
+
+                <p id="text"><strong>Ejemplo:</strong> Dado <span class="form-peque">\( S = \langle3,5,9,11\rangle
+                        \)</span>
+                    generado por 3, 5, 9 y 11. Si tomamos
+                    <span class="form-peque">\( n = 3 \)</span>,
+                    buscamos
+                    los elementos más pequeños de <strong>S</strong> en cada clase de
+                    residuo módulo 5.
+                </p>
+                <p id="text1"><span class="punto"></span>Residuo 0: 0 (el menor con 0 ≡ 0 mod 3).</p>
+                <p id="text1"><span class="punto"></span>Residuo 1: 10 (es el menor con 10 ≡ 1 mod 3).</p>
+                <p id="text1"><span class="punto"></span>Residuo 2: 5 (es el menor con 5 ≡ 2 mod 3).</p>
+                <p id="text">Vemos en consecuencia que <span class="form-peque">\( Ap(S, 3) = \{0, 10, 5\} \)</span></p>
+            </div>
+            <button onclick="utilidades()">Utilidades</button>
+            <div id="utilidades" style="display: none;">
+                <p id="text"><span class="punto"></span><strong>Cálculo del número de Frobenius:</strong> el número de
+                    Frobenius <span class="form-peque">\( F(S) \)</span> es el mayor número natural no perteneciente a
+                    un semigrupo numérico <span class="form-peque">\( S \)</span>. El conjunto de Apéry ayuda a
+                    calcularlo mediante la fórmula <span class="form-peque">\( F(S) = \max(\text{Ap}(S,n)) - n
+                        \)</span>.</p>
+                <p id="text"><span class="punto"></span><strong>Cálculo del género <span class="form-peque">\( g(S)
+                            \)</span>:
+                    </strong> se puede calcular el género de un semigrupo numérico usando la suma de sus elementos, lo
+                    cual es muy útil
+                    para el estudio de curvas algebraicas y en álgebra conmutativa, usando la fórmula <span
+                        class="form-peque">\( g(S) =
+                        \frac{1}{n} \sum_{x \in \text{Ap}(S,n)} x - \frac{2n - 1}{2} \)</span>.</p>
+                <p id="text"><span class="punto"></span><strong>Función de Hilbert y crecimiento de semigrupos:
+                    </strong>en el álgebra conmutativa, el conjunto de Apéry permite determinar esta función de un
+                    anillo de semigrupo k[S] el cual
+                    describe cómo crecen los ideales y dimensiones de estos anillos.
+                </p>
+                <p id="text"><span class="punto"></span><strong>Construcción de las bases de Gröbner:
+                    </strong>en el álgebra computacional, el conjunto de Apéry ayuda en estas construcciones para
+                    ideales asociados al semigrupo. Es
+                    muy usado en el estudio de variedades toroidales y en la resolución de sistemas polinomiales.</p>
+                <p id="text"><span class="punto"></span><strong>Aplicaciones combinatorias:
+                    </strong>muy usados para calcular las diversas combinaciones tanto en combinatoria aditiva
+                    (descomposición de enteros en sumas de
+                    elementos de S), como en códigos de Kunz, que clasifica semigrupos en términos de sus residuos
+                    módulo un número fijo.</p>
+                <p id="text"><span class="punto"></span><strong>Optimización y teoría de números:
+                    </strong>estos conjuntos nos ayudan a encontrar soluciones eficientes en problemas de minimización
+                    de residuos de divisibilidad,
+                    cálculo de combinaciones óptimas de monedas o recursos en economía y logística, y en el estudio y
+                    análisis de
+                    particiones numéricas en teoría combinatoria.</p>
+                <p id="text"><span class="punto"></span><strong>Aplicaciones en criptografía y codificación:
+                    </strong>se usan en esquemas de cifrado basado en semigrupos y en técnicas de reducción de
+                    datos en teoría de códigos, además de
+                    tener un impacto significativo en códigos correctores de errores (códigos algebraicos sobre cuerpos
+                    finitos).</p>
+            </div>
+        </section>
+
+        <section id="sH">
+            <h2>Cálculo del conjunto de Apéry de un semigrupo</h2>
+            <label for="inputNumeros">Introduce los elementos del semigrupo separados por comas:</label>
+            <input type="text" id="inputNumeros" placeholder="Ej. 4,6,7" required>
+            <button onclick="calculaConjuntoApery()">Calcular</button>
+            <button onclick="vaciarResultados()">Vaciar</button>
+        </section>
+
+        <section id="sH">
+            <h3>Resultados:</h3>
+            <p><strong>Conjunto de Apéry:</strong> <span id="Ap"></span></p>
+            <p><strong>Detalles de los residuos y números correspondientes:</strong></p>
+            <pre id="Modulos"></pre>
+        </section>
+    </main>
+
+    <footer id="f1"><a id="e1" href="documentocontacto.html">Documento de
+            contacto</a>---------------------------------------------------------------------
+        <a id="e1" href="documentacion.pdf">documentacion.pdf</a>
+    </footer>
+</body>
+
+</html>

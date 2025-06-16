@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Minimal Infinito</title>
+    <link rel="stylesheet" type="text/css" href="sistemaInfinito.css" />
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script type="text/javascript" id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+        </script>
+    <script>
+        /**
+         * @function mcd
+         * @description Calcula el máximo común divisor (MCD) de dos números usando Euclides.
+         * @param {number} a – Primer operando (mayor o igual a 0)
+         * @param {number} b – Segundo operando (mayor o igual a 0)
+         * @returns {number} – El MCD de a y b.
+         */
+        function mcd(a, b) {
+            while (b !== 0) {
+                let temp = b;
+                b = a % b;
+                a = temp;
+            }
+            return a;
+        }
+
+        /**
+         * @function reducemcd
+         * @description Calcula el MCD de todos los elementos de un array.
+         * @param {number[]} arr – Array de enteros positivos.
+         * @returns {number} – MCD de todos los elementos.
+         */
+        function reducemcd(arr) {
+            return arr.reduce((a, b) => mcd(a, b));
+        }
+
+        /**
+         * @function nFrob
+         * @description Calcula el número de Frobenius de un conjunto S de generadores.
+         * @param {number[]} S – Conjunto de generadores (todos > 0).
+         * @returns {(number|string)} – Número de Frobenius, o –1 si S contiene 1,
+         *                              o mensaje de error si mcd(S)!=1 o |S|<2.
+         */
+        function nFrob(S) {
+            if (S.includes(1)) {
+                return -1;
+            }
+
+            if (S.length < 2 || reducemcd(S) !== 1) {
+                return "No se puede calcular";
+            }
+
+            S.sort((a, b) => a - b);
+            let valorMax = S[S.length - 1] * S[S.length - 2];
+            let alcanzable = Array(valorMax + 1).fill(false);
+            alcanzable[0] = true;
+
+            for (let i = 1; i <= valorMax; i++) {
+                for (let a of S) {
+                    if (i - a >= 0 && alcanzable[i - a]) {
+                        alcanzable[i] = true;
+                        break;
+                    }
+                }
+            }
+
+            for (let i = valorMax; i >= 0; i--) {
+                if (!alcanzable[i]) {
+                    return i;
+                }
+            }
+            return "No se puede calcular";
+        }
+
+        /**
+         * @function calcular
+         * @description Se calcula si el semigrupo numérico presenta un sistema generador minimal infinito
+         */
+        function calcular() {
+            const inputNumeros = document.getElementById("inputNumeros").value;
+            const numeros = inputNumeros.split(",").map(num => parseInt(num.trim()));
+            const resultadoFrobenius = document.getElementById("resultadoFrobenius");
+            const partes = inputNumeros.split(",").map(num => num.trim());
+
+            for (let p of partes) {
+                if (!/^\d+$/.test(p)) {
+                    alert("Solo se permiten números enteros positivos (el 0 se incluye por defecto).");
+                    vaciarResultados();
+                    return;
+                }
+            }
+
+            let numFrob = nFrob(numeros);
+            resultadoFrobenius.innerText = numFrob;
+
+            //Se debe de comprobar que cumple el criterio de semigrupo numérico
+            if (reducemcd(numeros) !== 1) {
+                alert("El conjunto de números que has metido no es un semigrupo numérico.");
+                vaciarResultados();
+                return;
+            }
+
+            try {
+                const numerosValidos = validarEntrada(numeros);
+                if (esInfinito(numerosValidos)) {
+                    resultadoMinimal.textContent = "El sistema de generadores es minimal infinito.";
+                    explicacionResultado.textContent = `Es minimal infinito dado a que los siguientes números (${obtenerNumerosGenerados(numerosValidos)}) se pueden generar con combinaciones de estos elementos del semigrupo.`;
+                } else {
+                    const elementoGenerado = encontrarElementoGenerado(numerosValidos);
+                    if (elementoGenerado) {
+                        resultadoMinimal.textContent = "El sistema de generadores no es minimal infinito.";
+                        explicacionResultado.textContent = `No es minimal infinito porque ${elementoGenerado.generador} se puede generar a partir de combinaciones de otros elementos internos del semigrupo.`;
+                    } else {
+                        resultadoMinimal.textContent = "El sistema de generadores no es minimal infinito.";
+                        explicacionResultado.textContent = "El número de Frobenius es mayor que todos los elementos del semigrupo, luego eso explica por que no es minimal infinito";
+                    }
+                }
+            } catch (error) {
+                resultadoMinimal.textContent = error.message;
+                explicacionResultado.textContent = "";
+            }
+        }
+
+        /**
+         * @function validarEntrada
+         * @description Verifica que todos los elementos sean enteros positivos.
+         * @param {any[]} numeros – Array de valores a validar.
+         * @throws {Error} – Si algún elemento no es un entero > 0.
+         * @returns {number[]} – Array de enteros válidos.
+         */
+        function validarEntrada(numeros) {
+            const numerosValidos = [];
+            numeros.forEach(num => {
+                if (!/^\d+$/.test(num) || parseInt(num) <= 0) {
+                    throw new Error(`Entrada inválida: '${num}'. Por favor, introduce solo números positivos (el 0 se incluye por defecto).`);
+                }
+                numerosValidos.push(parseInt(num));
+            });
+            return numerosValidos;
+        }
+
+        /**
+         * @function esInfinito
+         * @description Determina si S genera todos los enteros posteriores al mayor.
+         * @param {number[]} S – Conjunto ordenado de generadores.
+         * @returns {boolean} – True si el sistema de generadores del semigrupo es minimal infinito.
+         */
+        function esInfinito(S) {
+            S = S.sort((a, b) => a - b);
+
+            //Lo primero es ver si algún elemento del semigrupo puede ser generado por combinaciones de otros elementos
+            if (combinacionesGeneranElemento(S)) {
+                return false;
+            }
+
+            //Se comprueba si se pueden generar los siguientes números del menor número
+            const menor = S[0];
+            const mayor = S[S.length - 1];
+            const numerosAComprobar = Array.from({ length: menor }, (_, i) => mayor + i + 1);
+
+            let alcanzables = new Set(S);
+            for (let num = 1; num <= Math.max(...numerosAComprobar); num++) {
+                if (Array.from(S).some(s => alcanzables.has(num - s))) {
+                    alcanzables.add(num);
+                }
+            }
+
+            return numerosAComprobar.every(num => alcanzables.has(num));
+        }
+
+        /**
+         * @function combinacionesGeneranElemento
+         * @description Comprueba si algún elemento de S se genera combinando otros.
+         * @param {number[]} S – Conjunto de generadores.
+         * @returns {boolean} – True si existe redundancia.
+         */
+        function combinacionesGeneranElemento(S) {
+            for (let i = 0; i < S.length; i++) {
+                for (let j = 0; j < S.length; j++) {
+                    if (i !== j) {
+                        for (let k = 1; k * S[j] <= S[i]; k++) {
+                            if (S.includes(S[i] - k * S[j])) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        /**
+         * @function obtenerNumerosGenerados
+         * @description Lista los primeros enteros generados tras el mayor de S.
+         * @param {number[]} S – Conjunto de generadores.
+         * @returns {string} – Cadena de números generados.
+         */
+        function obtenerNumerosGenerados(S) {
+            const menor = S[0];
+            const mayor = S[S.length - 1];
+            const numerosGenerados = [];
+            for (let i = 1; i <= menor; i++) {
+                numerosGenerados.push(mayor + i);
+            }
+            return numerosGenerados.join(", ");
+        }
+
+        /**
+         * @function encontrarElementoGenerado
+         * @description Encuentra un generador redundante si existe.
+         * @param {number[]} S – Conjunto de generadores.
+         * @returns {{generador:number,combinacion:number[]}|null}
+         */
+        function encontrarElementoGenerado(S) {
+            for (let i = 0; i < S.length; i++) {
+                for (let j = 0; j < S.length; j++) {
+                    if (i !== j) {
+                        for (let k = 1; k * S[j] <= S[i]; k++) {
+                            if (S.includes(S[i] - k * S[j])) {
+                                return { generador: S[i], combinacion: [S[j], S[i] - k * S[j]] };
+                            }
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
+        /**
+         * @function vaciarResultados
+         * @description Limpia todos los campos de entrada y resultados.
+         */
+        function vaciarResultados() {
+            document.getElementById("inputNumeros").value = "";
+            document.getElementById("resultadoMinimal").textContent = "";
+            document.getElementById("resultadoFrobenius").innerText = "";
+            document.getElementById("explicacionResultado").textContent = "";
+        }
+    </script>
+    <script>
+        /**
+         * @function ejemplos
+         * @description Muestra u oculta la sección de ejemplos.
+         */
+        function ejemplos() {
+            var ejemplosDiv = document.getElementById("ejemplo");
+            if (ejemplosDiv.style.display === "none") {
+                ejemplosDiv.style.display = "block";
+            } else {
+                ejemplosDiv.style.display = "none";
+            }
+        }
+    </script>
+    <script>
+        /**
+         * @function propiedades
+         * @description Muestra u oculta la sección de propiedades.
+         */
+        function propiedades() {
+            var propiedadesDiv = document.getElementById("propiedades");
+            if (propiedadesDiv.style.display === "none") {
+                propiedadesDiv.style.display = "block";
+            } else {
+                propiedadesDiv.style.display = "none";
+            }
+        }
+    </script>
+    <script>
+        /**
+         * @function utilidades
+         * @description Muestra u oculta la sección de utilidades.
+         */
+        function utilidades() {
+            var utilidadesDiv = document.getElementById("utilidades");
+            if (utilidadesDiv.style.display === "none") {
+                utilidadesDiv.style.display = "block";
+            } else {
+                utilidadesDiv.style.display = "none";
+            }
+        }
+    </script>
+</head>
+
+<body>
+    <header>
+        <img id="logo" src="imagenes/logo.png" alt="logo de la pagina del tfg" width="50" height="50">
+
+        <h1 id="SN_principal">SEMIGRUPOS NUMÉRICOS</h1>
+
+        <ul>
+            <li><a href="index.html">Inicio</a></li>
+            <li><a href="visionmatematica.html">Visión matemática</a></li>
+            <li><a href="visioninformatica.html">Visión informática</a></li>
+            <li><a href="utilidades.html">Utilidades</a></li>
+            <li><a href="informacion.html">Información</a></li>
+            <li><a href="experiencias.html">Experiencias</a></li>
+        </ul>
+
+    </header>
+    <main>
+        <section>
+            <nav class="sidebar">
+                <ul>
+                    <li><a href="nFrobenius.html">Número de Frobenius</a></li>
+                    <li><a href="genero.html">Género</a></li>
+                    <li><a href="conductor.html">Conductor</a></li>
+                    <li><a href="serieHilbert.html">Serie de Hilbert</a></li>
+                    <li><a href="esminimal.html">Sistema Minimal</a></li>
+                    <li><a href="conjuntosApery.html">Conjuntos de Apéry</a></li>
+                    <li><a href="sistemaInfinito.html">Sistema Minimal Infinito</a></li>
+                </ul>
+            </nav>
+        </section>
+
+        <section id="sH">
+            <h2 id="SH">SISTEMA DE GENERADORES MINIMAL INFINITO</h2>
+            <p>Los sistemas de generadores minimal infinitos dentro de un semigrupo numérico se determinan dado un
+                semigrupo
+                numérico, ver si
+                un conjunto de generadores puede producir un sistema de generadores minimal infinito bajo ciertas
+                condiciones.</p>
+            <p>Para determinar si un semigrupo numérico es minimal infinito, debemos de poder generar a partir del mayor
+                número
+                del semigrupo, los siguientes números bajos combinaciones lineales la cantidad de números que dictamine
+                el menor elemento del semigrupo. Además, un semigrupo numérico con sistema de generadores minimal
+                infinito
+                es si o si un sistema de generadores minimal.</p>
+            <button onclick="propiedades()">Propiedades</button>
+            <div id="propiedades" style="display: none;">
+                <p id="text"><span class="punto"></span><strong>Cierre adicional:</strong> si un semigrupo numérico
+                    presenta un sistema de generadores minimal
+                    infinito, significa que, a partir de cierto punto, podemos generar todos los números enteros
+                    mayores a un cierto valor utilizando combinaciones lineales no negativas de sus generadores.
+                </p>
+                <p id="text"><span class="punto"></span><strong>Conexión con la función de Frobenius:</strong> se
+                    relaciona con la búsqueda del mayor entero que no se puede expresar como una combinación lineal no
+                    negativa de los
+                    generadores. Si podemos demostrar que el semigrupo tiene un sistema de generadores minmal infinito,
+                    hemos pasado este límite.
+                </p>
+                <p id="text"><span class="punto"></span><strong>Propiedad de densidad:</strong> un semigrupo numérico
+                    con sistema de generadores minimal infinito
+                    es denso dado a que entre cualquier número grande y el siguiente, se puede encontrar
+                    otro número en el semigrupo. Esto conecta con propiedades analíticas y topológicas del
+                    semigrupo.
+                </p>
+                <p id="text"><span class="punto"></span><strong>Aplicaciones de optimización:</strong>
+                    conocer que un semigrupo tiene un sistema de generadores minimal infinito puede ser realmente útil
+                    en problemas de optimización en los que
+                    se
+                    necesita generar una
+                    secuencia infinita de soluciones viables.
+                </p>
+                <p id="text"><span class="punto"></span><strong>Sistemas dinámicos:</strong>
+                    en ciertos casos, los semigrupos que tengan un sistema de generadores minimal infinito tienen
+                    aplicaciones en la teoría de sistemas dinámicos,
+                    sobre todo en la
+                    modelización de comportamientos asintóticos y en la determinación de órbitas periódicas o
+                    aperiódicas.
+                </p>
+                <p id="text"><span class="punto"></span><strong>Reducción de problemas combinatorios:</strong>
+                    conocer que un semigrupo tiene un sistema de generadores minimal infinito nos ayuda a simplificar
+                    ciertos problemas de conteo y para
+                    establecer fórmulas
+                    generadoras.
+                </p>
+            </div>
+            <button onclick="ejemplos()">Ejemplos</button>
+            <div id="ejemplo" style="display: none;">
+                <p id="text"><strong>Ejemplo:</strong> Consideramos el semigrupo numérico generado por <span
+                        class="form-peque">\(A =
+                        \{3,5,7\}\)</span>. Este
+                    conjunto genera el semigrupo de los números que pueden
+                    escribirse como combinación de estos tres generadores con coeficientes naturales. Tenemos que
+                    comprobar, dado que 7 es
+                    el mayor número del semigrupo y 3 es el menor, que se pueden generar el 8, 9 y 10, es decir, para el
+                    mayor número del
+                    semigrupo, si se pueden generar los siguientes números teniendo en cuenta el menor número de dicho
+                    semigrupo (es decir,
+                    3), lo consideramos un sistema de generadores minimal infinito. En este caso, <span
+                        class="form-peque">\(5 + 3 = 8\), \(3
+                        \times 3 = 9\) y \(5 \times
+                        2 = 10\)</span>. Cómo
+                    podemos
+                    generar los 3 siguientes
+                    números, entonces este semigrupo numérico presenta un sistema de generadores minimal infinito.
+                </p>
+                <p id="text"><strong>Ejemplo:</strong> Consideremos el semigrupo numérico generado por <span
+                        class="form-peque">\( A =
+                        \{5,8,9,11\} \)</span>.
+                    Este conjunto genera el semigrupo de los números que
+                    pueden escribirse como combinación de estos cuatro generadores con coeficientes naturales. Tenemos
+                    que comprobar, dado
+                    que 11 es el mayor número del semigrupo y 5 es el menor, que se pueden generar el 12, 13, 14, 15 y
+                    16,
+                    es decir, para el
+                    mayor número del semigrupo, si se pueden generar los siguientes números teniendo en cuenta el menor
+                    número de dicho
+                    semigrupo (es decir, 5), lo consideramos un sistema de generadores minimal infinito. En este caso,
+                    podemos ver que el 12 no
+                    se puede generar
+                    bajo ninguna combinación dada por el semigrupo, luego este semigrupo no presenta un sistema de
+                    generadores minimal infinito.
+                </p>
+                <p id="text"><strong>Ejemplo:</strong> Consideremos el semigrupo numérico generado por <span
+                        class="form-peque">\(A =
+                        \{3,4,5,19\}\)</span>.
+                    Este conjunto genera el semigrupo de los números que
+                    pueden escribirse como combinación de estos cuatro generadores con coeficientes naturales. Tenemos
+                    que comprobar, dado
+                    que 19 es el mayor número del semigrupo y 5 es el menor, que se pueden generar el 20, 21 y 22, es
+                    decir, para el mayor
+                    número del semigrupo, si se pueden generar los siguientes números teniendo en cuenta el menor número
+                    de dicho semigrupo
+                    (es decir, 3), lo consideramos un sistema de generadores minimal infinito. En este caso, podemos ver
+                    que todos los elementos
+                    se pueden generar
+                    pero, en este caso, no es uno de estos dado a que debemos de comprobar si los
+                    elementos internos del
+                    semigrupo pueden ser generados mediante combinaciones de otros. En este caso <span
+                        class="form-peque">\(5\times 2 + 3 \times
+                        3 = 19\)</span>, luego
+                    el semigrupo numérico
+                    no presenta un sistema de generadores minimal infinito.
+                </p>
+                <p id="text"><strong>Ejemplo:</strong> Consideramos el semigrupo numérico generado por <span
+                        class="form-peque">\( A = \{4,7\} \)</span>.
+                    El número de Frobenius es <span class="form-peque">\( 4
+                        \times 7 - 7 - 4 =
+                        17 \)</span>.
+                    Al ser el número de Frobenius mayor que cualquiera
+                    de los elementos del semigrupo, este no presentará un sistema de generadores minimal infinito.
+                </p>
+            </div>
+            <button onclick="utilidades()">Utilidades</button>
+            <div id="utilidades" style="display: none;">
+                <p id="text"><span class="punto"></span><strong>Resolución de problemas de cambio: </strong>en problemas
+                    donde necesitas dar el cambio exacto utilizando monedas de ciertas denominaciones, saber si el
+                    semigrupo presenta un sistema de generadores minimal
+                    infinito puede ayudar a determinar si siempre es posible dar cualquier cantidad de cambio a partir
+                    de un cierto punto.
+                </p>
+                <p id="text"><span class="punto"></span><strong>Sistemas de producción: </strong>en aquellos problemas
+                    donde se combinan diferentes recursos para generar productos, un semigrupo con sistema de
+                    generadores minimal infinito puede asegurar
+                    que puedes satisfacer
+                    cualquier demanda a partir de una combinación de los recursos disponibles.
+                </p>
+                <p id="text"><span class="punto"></span><strong>Teoría de juegos: </strong>en teoría de juegos,
+                    sobre todo en aquellos juegos de suma cero, los semigrupos con sistemas de generadores minimales
+                    infinitos pueden ser útiles para modelar
+                    estrategias infinitas y comportamientos a largo plazo.
+                </p>
+                <p id="text"><span class="punto"></span><strong>Modelos matemáticos e inventarios: </strong>un semigrupo
+                    con sistema de generadores minimal
+                    infinito puede representar un modelo en el que siempre puedes satisfacer cualquier nivel de demanda
+                    futura
+                    a partir de combinaciones de niveles de stock existentes.
+                </p>
+                <p id="text"><span class="punto"></span><strong>Teoría de números: </strong>los
+                    semigrupos con sistemas de generadores minimales infinitos nos ayudan a estudiar la distribución de
+                    números y sus propiedades
+                    algebraicas.
+                </p>
+                <p id="text"><span class="punto"></span><strong>Sistemas algorítmicos: </strong>en informática, los
+                    semigrupos con sistemas de generadores minimales infinitos se puden usar en algoritmos que necesitan
+                    generar secuencias infinitas
+                    o
+                    en problemas de generación de claves criptográficas.
+                </p>
+                <p id="text"><span class="punto"></span><strong>Simulación y modelado: </strong>en simulación y
+                    modelado, sobre todo en las simulaciones estocásticas y modelos probabilísticos, un semigrupo con
+                    sistema de generadores minimal
+                    infinito
+                    puede representar la generación continua de eventos o estados.
+                </p>
+            </div>
+        </section>
+
+        <section id="sH">
+            <h2>Comprobación de sistemas de generadores minimales infinitos</h2>
+            <label for="inputNumeros">Introduce los elementos del semigrupo separados por comas (sin incluir el
+                0):</label>
+            <input type="text" id="inputNumeros" placeholder="Ej. 3,4,5" required>
+            <button onclick="calcular()">Calcular</button>
+            <button onclick="vaciarResultados()">Vaciar</button>
+        </section>
+
+        <section id="sH">
+            <p><strong>¿Es minimal?:</strong> <span id="resultadoMinimal"></span></p>
+            <p><strong>Número de Frobenius:</strong> <span id="resultadoFrobenius"></span></p>
+            <p id="explicacionResultado"></p>
+        </section>
+
+    </main>
+
+    <footer id="f1"><a id="e1" href="documentocontacto.html">Documento de
+            contacto</a>---------------------------------------------------------------------
+        <a id="e1" href="documentacion.pdf">documentacion.pdf</a>
+    </footer>
+</body>
+
+</html>
